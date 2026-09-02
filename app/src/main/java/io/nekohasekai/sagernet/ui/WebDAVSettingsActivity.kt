@@ -12,6 +12,7 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceDataStore
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.database.preference.EditTextPreferenceModifiers
 import io.nekohasekai.sagernet.ktx.onMainDispatcher
 import io.nekohasekai.sagernet.ktx.runOnDefaultDispatcher
 import io.nekohasekai.sagernet.ktx.snackbar
@@ -92,11 +93,7 @@ class WebDAVSettingsActivity : ThemedActivity() {
             }
             
             findPreference<EditTextPreference>("webdavPassword")?.apply {
-                setOnBindEditTextListener { editText ->
-                    editText.setSingleLine()
-                    editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    editText.setSelection(editText.text.length)
-                }
+                setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
                 // 使用与其他密码字段一致的隐藏摘要样式
                 summaryProvider = GroupSettingsActivity.PasswordSummaryProvider
             }

@@ -52,10 +52,12 @@ class SnellSettingsActivity : ProfileSettingsActivity<SnellBean>() {
 
         findPreference<EditTextPreference>("psk")!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
 
         val userKeyPref = findPreference<EditTextPreference>("userKey")!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
 
         val versionPref = findPreference<SimpleMenuPreference>("version")!!

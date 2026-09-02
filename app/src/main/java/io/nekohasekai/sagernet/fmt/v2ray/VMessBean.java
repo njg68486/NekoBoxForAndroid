@@ -9,15 +9,18 @@ import moe.matsuri.nb4a.utils.JavaUtil;
 
 public class VMessBean extends StandardV2RayBean {
 
-    public Integer alterId; // alterID == -1 --> VLESS
+    public Integer alterId; // alterID == -1 --> VLESS; alterID == -2 --> x365
 
     @Override
     public void initializeDefaultValues() {
         super.initializeDefaultValues();
 
         alterId = alterId != null ? alterId : 0;
-        
-        if (alterId == -1) {
+
+        if (isX365()) {
+            // x365 keeps the VLESS-style empty encryption
+            encryption = JavaUtil.isNotBlank(encryption) ? encryption : "";
+        } else if (alterId == -1) {
             encryption = JavaUtil.isNotBlank(encryption) ? encryption : "";
         } else if (!isVLESS()) {
             encryption = JavaUtil.isNotBlank(encryption) ? encryption : "auto";

@@ -56,10 +56,12 @@ class SSHSettingsActivity : ProfileSettingsActivity<SSHBean>() {
         }
         val password = findPreference<EditTextPreference>(Key.SERVER_PASSWORD)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         val privateKey = findPreference<EditTextPreference>(Key.SERVER_PRIVATE_KEY)!!
         val privateKeyPassphrase = findPreference<EditTextPreference>(Key.SERVER_PASSWORD1)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         val authType = findPreference<SimpleMenuPreference>(Key.SERVER_AUTH_TYPE)!!
         fun updateAuthType(type: Int = DataStore.serverAuthType) {

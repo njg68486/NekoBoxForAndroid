@@ -165,6 +165,12 @@ public class KryoConverters {
     }
 
     @TypeConverter
+    public static moe.matsuri.nb4a.proxy.xhttp.XhttpBean xhttpDeserialize(byte[] bytes) {
+        if (JavaUtil.isEmpty(bytes)) return null;
+        return deserialize(new moe.matsuri.nb4a.proxy.xhttp.XhttpBean(), bytes);
+    }
+
+    @TypeConverter
     public static SnellBean snellDeserialize(byte[] bytes) {
         if (JavaUtil.isEmpty(bytes)) return null;
         return deserialize(new SnellBean(), bytes);

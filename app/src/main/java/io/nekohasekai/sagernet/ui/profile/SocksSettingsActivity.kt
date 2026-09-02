@@ -47,6 +47,7 @@ class SocksSettingsActivity : ProfileSettingsActivity<SOCKSBean>() {
         }
         val password = findPreference<EditTextPreference>(Key.SERVER_PASSWORD)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         val protocol = findPreference<SimpleMenuPreference>(Key.SERVER_PROTOCOL)!!
 

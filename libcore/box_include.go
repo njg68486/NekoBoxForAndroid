@@ -41,6 +41,9 @@ import (
 	"github.com/sagernet/sing-box/protocol/wireguard"
 
 	"libcore/protocol/juicity"
+	libcoreX365 "libcore/protocol/x365"
+	libcoreXhttp "libcore/protocol/xhttp"
+	fastupmod "github.com/oh5uosnvh/fastup-mod/fastup"
 
 	_ "github.com/sagernet/sing-box/experimental/clashapi"
 	_ "github.com/sagernet/sing-box/transport/v2rayquic"
@@ -84,6 +87,9 @@ func nekoboxAndroidOutboundRegistry() *outbound.Registry {
 	vless.RegisterOutbound(registry)
 	anytls.RegisterOutbound(registry)
 	snellprotocol.RegisterOutbound(registry)
+	libcoreX365.RegisterOutbound(registry)
+	libcoreXhttp.RegisterOutbound(registry)
+	fastupmod.RegisterOutbound(registry)
 
 	hysteria.RegisterOutbound(registry)
 	tuic.RegisterOutbound(registry)

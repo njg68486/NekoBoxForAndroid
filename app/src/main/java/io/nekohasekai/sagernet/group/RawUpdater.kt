@@ -365,15 +365,65 @@ object RawUpdater : GroupUpdater() {
                             })
                         }
 
-                        "vmess", "vless", "trojan" -> {
+                        "xhttp" -> {
+                            // 黑石 (Heysocks) 官方 xhttp 私有协议
+                            // 拨号目标 = gateway (鉴权网关), server/port 仅落地展示
+                            proxies.add(moe.matsuri.nb4a.proxy.xhttp.XhttpBean().apply {
+                                name = proxy["name"]?.toString()
+
+                                val gateway = proxy["gateway"]?.toString()
+                                if (!gateway.isNullOrBlank()) {
+                                    val idx = gateway.lastIndexOf(':')
+                                    if (idx > 0) {
+                                        serverAddress = gateway.substring(0, idx).trim(' ', '[', ']')
+                                        serverPort = gateway.substring(idx + 1).trim().toIntOrNull() ?: 443
+                                    }
+                                }
+                                if (serverAddress.isNullOrBlank()) {
+                                    val gs = proxy["gateway-server"]?.toString()
+                                    val gp = proxy["gateway-port"]?.toString()?.toIntOrNull()
+                                    if (!gs.isNullOrBlank()) {
+                                        serverAddress = gs
+                                        serverPort = gp ?: 443
+                                    }
+                                }
+                                // fallback: dial the landing server directly
+                                if (serverAddress.isNullOrBlank()) {
+                                    serverAddress = proxy["server"]?.toString() ?: "127.0.0.1"
+                                    serverPort = proxy["port"]?.toString()?.toIntOrNull() ?: 443
+                                }
+
+                                landingServer = proxy["server"]?.toString() ?: ""
+                                landingPort = proxy["port"]?.toString()?.toIntOrNull() ?: 0
+
+                                password = proxy["password"]?.toString() ?: ""
+                                sess = proxy["sess"]?.toString() ?: ""
+                                auth = proxy["auth"]?.toString() ?: ""
+                                uuid = proxy["uuid"]?.toString() ?: ""
+                                paddingLen = proxy["padding-len"]?.toString() ?: "8-64"
+
+                                // fake-net.tcp 等价 sess; 若 sess 缺失则回退
+                                if (sess.isNullOrBlank()) {
+                                    (proxy["fake-net"] as? Map<String, Any?>)?.let {
+                                        sess = it["tcp"]?.toString() ?: ""
+                                    }
+                                }
+                            })
+                        }
+
+                        "vmess", "vless", "trojan", "x365", "fastup" -> {
                             val bean = when (proxy["type"] as String) {
                                 "vmess" -> VMessBean()
                                 "vless" -> VMessBean().apply {
                                     alterId = -1 // make it VLESS
                                     packetEncoding = 2 // clash meta default XUDP
                                 }
+                                "x365" -> VMessBean().apply {
+                                    alterId = -2 // make it x365 (365VPN private handshake)
+                                    packetEncoding = 2
+                                }
 
-                                "trojan" -> TrojanBean().apply {
+                                "trojan", "fastup" -> TrojanBean().apply {
                                     security = "tls"
                                 }
 
@@ -388,6 +438,9 @@ object RawUpdater : GroupUpdater() {
                                     "name" -> bean.name = opt.value?.toString()
                                     "password" -> if (bean is TrojanBean) bean.password =
                                         opt.value?.toString()
+
+                                    "mpw" -> if (bean is TrojanBean) bean.mpw =
+                                        opt.value?.toString() ?: ""
 
                                     "uuid" -> if (bean is VMessBean) bean.uuid =
                                         opt.value?.toString()

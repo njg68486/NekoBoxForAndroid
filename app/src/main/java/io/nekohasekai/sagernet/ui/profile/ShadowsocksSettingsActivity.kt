@@ -69,6 +69,7 @@ class ShadowsocksSettingsActivity : ProfileSettingsActivity<ShadowsocksBean>() {
         password.preference.apply {
             this as EditTextPreference
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
 
         // Mux mode visibility control

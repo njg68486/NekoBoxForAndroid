@@ -64,6 +64,7 @@ class MieruSettingsActivity : ProfileSettingsActivity<MieruBean>() {
         }
         findPreference<EditTextPreference>(Key.SERVER_PASSWORD)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         val protocol = findPreference<SimpleMenuPreference>(Key.SERVER_PROTOCOL)!!
         val mtu = findPreference<EditTextPreference>(Key.SERVER_MTU)!!

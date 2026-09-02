@@ -653,6 +653,16 @@ class ConfigurationFragment @JvmOverloads constructor(
                 startActivity(Intent(requireActivity(), TrojanSettingsActivity::class.java))
             }
 
+            R.id.action_new_x365 -> {
+                startActivity(Intent(requireActivity(), VMessSettingsActivity::class.java).apply {
+                    putExtra("x365", true)
+                })
+            }
+
+            R.id.action_new_xhttp -> {
+                startActivity(Intent(requireActivity(), moe.matsuri.nb4a.proxy.xhttp.XhttpSettingsActivity::class.java))
+            }
+
             R.id.action_new_trojan_go -> {
                 startActivity(Intent(requireActivity(), TrojanGoSettingsActivity::class.java))
             }

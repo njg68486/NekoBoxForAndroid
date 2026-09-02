@@ -24,6 +24,10 @@ fun buildSingBoxOutboundAnyTLSBean(bean: AnyTLSBean): SingBoxOptions.Outbound_An
                 certificate = it
             }
             var fingerprint = bean.utlsFingerprint.blankAsNull()
+            // v4: anytls + TLS 默认补 chrome 指纹 (无指纹的 TLS 会被部分机场服务端直接掐断)
+            if (fingerprint.isNullOrBlank()) {
+                fingerprint = "chrome"
+            }
             if (!bean.realityPubKey.isNullOrBlank()) {
                 reality = SingBoxOptions.OutboundRealityOptions().apply {
                     enabled = true

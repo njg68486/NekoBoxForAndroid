@@ -51,6 +51,7 @@ class NaiveSettingsActivity : ProfileSettingsActivity<NaiveBean>() {
         }
         findPreference<EditTextPreference>(Key.SERVER_PASSWORD)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         findPreference<EditTextPreference>(Key.SERVER_INSECURE_CONCURRENCY)!!.apply {
             setOnBindEditTextListener(EditTextPreferenceModifiers.Number)

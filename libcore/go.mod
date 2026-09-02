@@ -19,6 +19,10 @@ require (
 	golang.org/x/sys v0.41.0
 )
 
+require github.com/sagernet/sing-vmess v0.2.7
+
+require github.com/oh5uosnvh/fastup-mod v0.0.0
+
 require (
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
@@ -63,7 +67,6 @@ require (
 	github.com/sagernet/sing-shadowsocks2 v0.2.1 // indirect
 	github.com/sagernet/sing-shadowtls v0.2.1-0.20250503051639-fcd445d33c11 // indirect
 	github.com/sagernet/sing-snell v0.0.0-20260719094200-c43fbee0e839 // indirect
-	github.com/sagernet/sing-vmess v0.2.7 // indirect
 	github.com/sagernet/smux v1.5.50-sing-box-mod.1 // indirect
 	github.com/sagernet/wireguard-go v0.0.1-beta.7 // indirect
 	github.com/sagernet/ws v0.0.0-20231204124109-acfe8907c854 // indirect
@@ -93,6 +96,14 @@ require (
 replace github.com/matsuridayo/libneko => ../../libneko
 
 replace github.com/sagernet/sing-box => ../../sing-box
+
+replace github.com/anytls/sing-anytls => ../../sing-anytls-shanlian
+
+// viewTurbo 魔改 SS (密码 #viewTurbo 后缀触发三段式私有握手)
+replace github.com/sagernet/sing-shadowsocks2 => ../../sing-shadowsocks2-vt
+
+// FastUP 魔改 trojan (key=sha224hex(md5hex(password‖mpw)), mpw 为开关)
+replace github.com/oh5uosnvh/fastup-mod => ../../fastup-mod
 
 replace github.com/sagernet/sing-vmess => github.com/starifly/sing-vmess v0.2.8-mod.1
 

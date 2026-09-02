@@ -46,6 +46,10 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
     private val realityPubKey = pbm.add(PreferenceBinding(Type.Text, "realityPubKey"))
     private val realityShortId = pbm.add(PreferenceBinding(Type.Text, "realityShortId"))
 
+    // FastUP 魔改 trojan: mpw 放在密码下一栏, 仅 TrojanBean 可见;
+    // 反射绑定对无该字段的 bean 自动跳过 (PreferenceBinding 内部 try-catch)
+    private val mpw = pbm.add(PreferenceBinding(Type.Text, "mpw"))
+
     private val enableECH = pbm.add(PreferenceBinding(Type.Bool, "enableECH"))
     private val echConfig = pbm.add(PreferenceBinding(Type.Text, "echConfig"))
 
@@ -107,7 +111,8 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         // vmess/vless/http/trojan
         val isHttp = tmpBean is HttpBean
         val isVmess = tmpBean is VMessBean && tmpBean?.isVLESS == false
-        val isVless = tmpBean?.isVLESS == true
+        val isVless = tmpBean?.isVLESS == true && !tmpBean!!.isX365()
+        val isX365 = tmpBean?.isX365() == true
 
         serverPort.preference.apply {
             this as EditTextPreference
@@ -119,13 +124,24 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
             setOnBindEditTextListener(EditTextPreferenceModifiers.Port)
         }
 
+        // 密码/uuid/mpw: 摘要默认圆点隐藏, 点击弹窗直接明文显示 + 复制按钮 (全协议统一)
         uuid.preference.summaryProvider = PasswordSummaryProvider
+        password.preference.summaryProvider = PasswordSummaryProvider
+        mpw.preference.summaryProvider = PasswordSummaryProvider
+        listOfNotNull(
+            uuid.preference, password.preference, mpw.preference
+        ).forEach {
+            it as EditTextPreference
+            it.setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
+        }
 
         type.preference.isVisible = !isHttp
         uuid.preference.isVisible = !isHttp
-        packetEncoding.preference.isVisible = isVmess || isVless
-        alterId.preference.isVisible = isVmess
-        encryption.preference.isVisible = isVmess || isVless
+        // FastUP mpw: 仅 trojan 编辑界面显示
+        mpw.preference.isVisible = tmpBean is TrojanBean
+        packetEncoding.preference.isVisible = isVmess || isVless || isX365
+        alterId.preference.isVisible = isVmess && !isX365
+        encryption.preference.isVisible = (isVmess || isVless) && !isX365
         vlessEncryption.preference.isVisible = isVless
         username.preference.isVisible = isHttp
         password.preference.isVisible = isHttp

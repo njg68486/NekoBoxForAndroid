@@ -67,8 +67,14 @@
                         android:id="@+id/action_new_shadowtls"
                         android:title="@string/action_shadowtls" />
                     <item
+                        android:id="@+id/action_new_x365"
+                        android:title="x365" />
+                    <item
                         android:id="@+id/action_new_anytls"
                         android:title="@string/action_anytls" />
+                    <item
+                        android:id="@+id/action_new_xhttp"
+                        android:title="xhttp" />
                     <item
                         android:id="@+id/action_new_snell"
                         android:title="@string/action_snell" />

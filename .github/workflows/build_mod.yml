@@ -1,0 +1,88 @@
+name: Build Mod APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      anytls_commit:
+        description: 'sing-anytls-shanlian commit (shanlian anytls mod)'
+        required: false
+        default: 'a54fa67'
+      vt_commit:
+        description: 'sing-shadowsocks2-vt commit (viewTurbo SS mod)'
+        required: false
+        default: '8ad5da2'
+      fastup_commit:
+        description: 'fastup-mod commit (FastUP trojan mod, empty = HEAD)'
+        required: false
+        default: '2aba39c395916633200ac72d9fe6dbf10f2b80bd'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Golang
+        uses: actions/setup-go@v6
+        with:
+          go-version: '^1.24'
+
+      - name: Pin external mod repos
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          sed -i "s/^export COMMIT_ANYTLS_SHANLIAN=.*/export COMMIT_ANYTLS_SHANLIAN=\"${{ inputs.anytls_commit }}\"/" buildScript/lib/core/get_source_env.sh
+          sed -i "s/^export COMMIT_SING_SS_VT=.*/export COMMIT_SING_SS_VT=\"${{ inputs.vt_commit }}\"/" buildScript/lib/core/get_source_env.sh
+          sed -i "s/^export COMMIT_FASTUP_MOD=.*/export COMMIT_FASTUP_MOD=\"${{ inputs.fastup_commit }}\"/" buildScript/lib/core/get_source_env.sh
+          cat buildScript/lib/core/get_source_env.sh
+
+      - name: Build LibCore
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: ./run lib core
+
+      - name: Build APK
+        env:
+          BUILD_PLUGIN: none
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          ./run init action gradle
+          ./gradlew app:assembleOssDebug
+          APK=$(find app/build/outputs/apk -name '*arm64-v8a*.apk' | head -1)
+          echo "APK_PATH=$APK"
+          echo "APK_DIR=$(realpath $(dirname $APK))" >> $GITHUB_ENV
+
+      - name: Verify mods are in the binary
+        run: |
+          APK=$(find app/build/outputs/apk -name '*arm64-v8a*.apk' | head -1)
+          unzip -o -q "$APK" 'lib/arm64-v8a/libgojni.so' -d /tmp/apkchk
+          STRINGS=$(grep -c "x365" /tmp/apkchk/lib/arm64-v8a/libgojni.so || true)
+          echo "libgojni.so 'x365' hits: $STRINGS"
+          if [ "$STRINGS" -eq 0 ]; then
+            echo "::error::x365 protocol NOT found in libgojni.so — mods missing from build!"
+            exit 1
+          fi
+          VT=$(grep -c "viewTurbo" /tmp/apkchk/lib/arm64-v8a/libgojni.so || true)
+          echo "libgojni.so 'viewTurbo' hits: $VT"
+          FU=$(grep -c "fastup" /tmp/apkchk/lib/arm64-v8a/libgojni.so || true)
+          echo "libgojni.so 'fastup' hits: $FU"
+          if [ "$FU" -eq 0 ]; then
+            echo "::error::fastup protocol NOT found in libgojni.so — mod missing from build!"
+            exit 1
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NekoBox-mod-arm64
+          path: ${{ env.APK_DIR }}

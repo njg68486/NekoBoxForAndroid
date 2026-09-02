@@ -74,9 +74,11 @@ class TrojanGoSettingsActivity : ProfileSettingsActivity<TrojanGoBean>() {
         }
         findPreference<EditTextPreference>(Key.SERVER_PASSWORD)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         findPreference<EditTextPreference>(Key.SERVER_PASSWORD1)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
         wsCategory = findPreference(Key.SERVER_WS_CATEGORY)!!
         ssCategory = findPreference(Key.SERVER_SS_CATEGORY)!!

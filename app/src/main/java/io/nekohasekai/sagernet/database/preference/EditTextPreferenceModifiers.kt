@@ -13,6 +13,15 @@ object EditTextPreferenceModifiers {
         }
     }
 
+    object PasswordPlain : EditTextPreference.OnBindEditTextListener {
+        override fun onBindEditText(editText: EditText) {
+            // 明文 + 等宽 (ProfileSettingsActivity 的密码类偏好会被拦截走
+            // PasswordDialogFragment 自定义弹窗; 此 modifier 服务于其余场景如 WebDAV)
+            editText.inputType = EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            editText.typeface = Typeface.MONOSPACE
+        }
+    }
+
     object Hosts : EditTextPreference.OnBindEditTextListener {
 
         override fun onBindEditText(editText: EditText) {

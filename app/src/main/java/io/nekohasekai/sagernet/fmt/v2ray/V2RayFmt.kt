@@ -62,8 +62,12 @@ fun parseV2Ray(link: String): StandardV2RayBean {
 
     // "std" format
 
-    val bean = VMessBean().apply { if (link.startsWith("vless://")) alterId = -1 }
-    val url = link.replace("vmess://", "https://").replace("vless://", "https://").toHttpUrl()
+    val bean = VMessBean().apply {
+        if (link.startsWith("vless://")) alterId = -1
+        if (link.startsWith("x365://")) alterId = -2
+    }
+    val url = link.replace("vmess://", "https://").replace("vless://", "https://")
+        .replace("x365://", "https://").toHttpUrl()
 
     if (url.password.isNotBlank()) {
         // https://github.com/v2fly/v2fly-github-io/issues/26 (rarely use)
@@ -162,6 +166,10 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
 
     if (this is TrojanBean) {
         password = url.username
+        // FastUP mpw (魔改/普通 trojan 开关)
+        url.queryParameter("mpw")?.let {
+            if (it.isNotBlank()) mpw = it
+        }
     } else {
         uuid = url.username
     }
@@ -503,6 +511,11 @@ fun StandardV2RayBean.toUriVMessVLESSTrojan(isTrojan: Boolean): String {
         .port(serverPort)
         .addQueryParameter("type", type)
 
+    // FastUP mpw (魔改 trojan 导出)
+    if (isTrojan && this is TrojanBean && mpw.isNotBlank()) {
+        builder.addQueryParameter("mpw", mpw)
+    }
+
     if (isVLESS) {
         // Add encryption if configured
         if (vlessEncryption.isNotBlank() && vlessEncryption != "none") {
@@ -618,7 +631,13 @@ fun StandardV2RayBean.toUriVMessVLESSTrojan(isTrojan: Boolean): String {
         builder.encodedFragment(name.urlSafe())
     }
 
-    return builder.toLink(if (isTrojan) "trojan" else "vless")
+    return builder.toLink(
+        when {
+            isTrojan -> "trojan"
+            this is VMessBean && isX365() -> "x365"
+            else -> "vless"
+        }
+    )
 }
 
 fun buildSingBoxOutboundStreamSettings(bean: StandardV2RayBean): V2RayTransportOptions? {
@@ -834,6 +853,25 @@ fun buildSingBoxOutboundStandardV2RayBean(bean: StandardV2RayBean): Outbound {
         }
 
         is VMessBean -> {
+            if (bean.isX365()) return Outbound_VLESSOptions().apply {
+                type = "x365"
+                server = bean.serverAddress
+                server_port = bean.serverPort
+                uuid = bean.uuid
+                if (bean.encryption.isNotBlank() && bean.encryption != "auto") {
+                    flow = bean.encryption
+                }
+                if (bean.vlessEncryption.isNotBlank() && bean.vlessEncryption != "none") {
+                    encryption = bean.vlessEncryption
+                }
+                when (bean.packetEncoding) {
+                    0 -> packet_encoding = ""
+                    1 -> packet_encoding = "packetaddr"
+                    2 -> packet_encoding = "xudp"
+                }
+                tls = buildSingBoxOutboundTLS(bean)
+                transport = buildSingBoxOutboundStreamSettings(bean)
+            }
             if (bean.isVLESS) return Outbound_VLESSOptions().apply {
                 type = "vless"
                 server = bean.serverAddress
@@ -872,7 +910,14 @@ fun buildSingBoxOutboundStandardV2RayBean(bean: StandardV2RayBean): Outbound {
 
         is TrojanBean -> {
             return Outbound_TrojanOptions().apply {
-                type = "trojan"
+                // FastUP 魔改开关: mpw 非空 → fastup 出站 (key=sha224hex(md5hex(password‖mpw)))
+                // mpw 为空 → 与普通 trojan 完全一致
+                if (bean.mpw.isNotBlank()) {
+                    type = "fastup"
+                    _hack_config_map["mpw"] = bean.mpw
+                } else {
+                    type = "trojan"
+                }
                 server = bean.serverAddress
                 server_port = bean.serverPort
                 password = bean.password

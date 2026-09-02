@@ -375,7 +375,15 @@ public abstract class StandardV2RayBean extends AbstractBean {
     public boolean isVLESS() {
         if (this instanceof VMessBean) {
             Integer aid = ((VMessBean) this).alterId;
-            return aid != null && aid == -1;
+            return aid != null && (aid == -1 || aid == -2);
+        }
+        return false;
+    }
+
+    public boolean isX365() {
+        if (this instanceof VMessBean) {
+            Integer aid = ((VMessBean) this).alterId;
+            return aid != null && aid == -2;
         }
         return false;
     }

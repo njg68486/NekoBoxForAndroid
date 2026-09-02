@@ -169,6 +169,20 @@ suspend fun parseProxies(text: String): List<AbstractBean> {
             }.onFailure {
                 Logs.w(it)
             }
+        } else if (startsWith("x365://")) {
+            Logs.d("Try parse x365 link: $this")
+            runCatching {
+                entities.add(parseV2Ray(this))
+            }.onFailure {
+                Logs.w(it)
+            }
+        } else if (startsWith("heysocks://")) {
+            Logs.d("Try parse heysocks (xhttp) link: $this")
+            runCatching {
+                entities.add(moe.matsuri.nb4a.proxy.xhttp.parseXhttpLink(this))
+            }.onFailure {
+                Logs.w(it)
+            }
         } else if (startsWith("trojan://")) {
             Logs.d("Try parse trojan link: $this")
             runCatching {

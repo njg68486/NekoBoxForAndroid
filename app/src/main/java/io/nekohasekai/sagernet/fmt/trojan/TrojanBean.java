@@ -14,18 +14,25 @@ public class TrojanBean extends StandardV2RayBean {
 
     public String password;
 
+    // FastUP (com.wldc.fastup) 魔改 trojan 的全局魔法密码 (json:"mpw")。
+    // 空 = 普通 trojan；非空 = 密钥派生 key = sha224hex(md5hex(password ‖ mpw))。
+    // 逆向实锤: fj16 hook getTrojanMpw/trojan.Key 双账号验证。
+    public String mpw;
+
     @Override
     public void initializeDefaultValues() {
         super.initializeDefaultValues();
         if (security == null || security.isEmpty()) security = "tls";
         if (password == null) password = "";
+        if (mpw == null) mpw = "";
     }
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(2);
+        output.writeInt(3);
         super.serialize(output);
         output.writeString(password);
+        output.writeString(mpw);
     }
 
     @Override
@@ -34,6 +41,9 @@ public class TrojanBean extends StandardV2RayBean {
         if (version >= 2) {
             super.deserialize(input); // StandardV2RayBean
             password = input.readString();
+            if (version >= 3) {
+                mpw = input.readString();
+            }
         } else {
             // From AbstractBean
             serverAddress = input.readString();

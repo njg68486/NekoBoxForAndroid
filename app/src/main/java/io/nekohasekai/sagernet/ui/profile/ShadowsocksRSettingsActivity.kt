@@ -47,6 +47,7 @@ class ShadowsocksRSettingsActivity : ProfileSettingsActivity<ShadowsocksRBean>()
         }
         findPreference<EditTextPreference>(Key.SERVER_PASSWORD)!!.apply {
             summaryProvider = PasswordSummaryProvider
+            setOnBindEditTextListener(EditTextPreferenceModifiers.PasswordPlain)
         }
     }
 }

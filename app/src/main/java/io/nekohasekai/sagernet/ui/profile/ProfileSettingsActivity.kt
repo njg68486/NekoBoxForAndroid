@@ -204,6 +204,25 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
     }
 
     open fun PreferenceFragmentCompat.displayPreferenceDialog(preference: Preference): Boolean {
+        // 密码类偏好 (summaryProvider 为圆点摘要) → 自定义明文弹窗: 取消|复制|确认
+        if (preference is androidx.preference.EditTextPreference &&
+            preference.summaryProvider === PasswordSummaryProvider
+        ) {
+            // 修复闪退: 不用 setTargetFragment (跨 FragmentManager 非法),
+            // 数据 arguments 直传; 结果经 FragmentManager setFragmentResult 回传
+            val dialog = PasswordDialogFragment.newInstance(
+                preference.key, preference.title, preference.text ?: ""
+            )
+            dialog.show(childFragmentManager, "password")
+            childFragmentManager.setFragmentResultListener("password_edit", this) { _, bundle ->
+                val key = bundle.getString("key")
+                val text = bundle.getString("text")
+                if (key != null) {
+                    findPreference<EditTextPreference>(key)?.let { it.text = text }
+                }
+            }
+            return true
+        }
         return false
     }
 
