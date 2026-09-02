@@ -76,7 +76,7 @@ class PasswordDialogFragment : DialogFragment() {
             // 按钮行 (同一行): 取消(左/neutral) | 复制(中/negative, 不关闭) | 保存(右/positive)
             .setNeutralButton(android.R.string.cancel, null)
             .setNegativeButton(R.string.action_copy) { _, _ -> }
-            .setPositiveButton(android.R.string.save) { _, _ ->
+            .setPositiveButton(R.string.save) { _, _ ->
                 // 通过 arguments 回传结果, 由宿主 PreferenceFragment 写回 preference
                 val raw = rawText(editText)
                 parentFragmentManager.setFragmentResult(
