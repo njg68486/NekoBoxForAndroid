@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- kl dock：HTML 原型 .dock 的 border-radius:17px + background:#0BA8E5 -->
+<!--
+  kl dock 底板：形状 = 原型 .dock 的 border-radius:17px。
+  颜色不在这里写死 —— 上游 ServiceButton(FAB)/StatsBar 都是 app:backgroundTint="?colorPrimary"，
+  dock 用 backgroundTintList 染同一套主题色（KlDock.init），所以这里必须是纯白底：
+  tint 是与 drawable 像素相乘的，白色保证染色结果就是 colorPrimary 本身。
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/kl_dock" />
+    <solid android:color="#FFFFFFFF" />
     <corners android:radius="17dp" />
 </shape>

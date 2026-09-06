@@ -3,6 +3,7 @@ package io.nekohasekai.sagernet.widget
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.ColorStateList
 import android.text.format.Formatter
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -14,6 +15,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.TooltipCompat
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.bg.BaseService
+import io.nekohasekai.sagernet.ktx.getColorAttr
 import io.nekohasekai.sagernet.ktx.dp2px
 
 /**
@@ -22,8 +24,11 @@ import io.nekohasekai.sagernet.ktx.dp2px
  * 完全照 HTML 原型 `.dock` 的结构与状态机实现：
  *   收起态：58×58 圆角方形（radius 17dp），只有 play 按钮。
  *   展开态：174×58，左侧 116dp 是 dock-info（▼下行 / ▲上行 / 延迟 三行），
- *           右侧仍是 58dp 的 power 按钮，两者之间 1dp 分割线 #B5E8F8。
+ *           右侧仍是 58dp 的 power 按钮。两者之间不放任何分割线（用户要求），
+ *           靠同一块主题色底板连体，展开 = 向右拓展。
  *   过渡：宽度动画 380ms cubic-bezier(.32,.72,0,1)，与原型 `transition:width .38s` 一致。
+ *   配色：背景 = ?colorPrimary（与上游 FAB/StatsBar 的 backgroundTint 同源，跟随主题），
+ *         前景 = 白色（与上游 ic_service_* 矢量及 StatsBar 文字一致）。
  *
  * 原型里 dock 展开与否只跟「是否运行」绑定（`state.dockExpanded = state.running`），
  * 这里同样由 changeState 驱动，不额外暴露展开开关。
@@ -65,6 +70,10 @@ class KlDock @JvmOverloads constructor(
         clipChildren = true
         clipToPadding = true
         background = context.getDrawable(R.drawable.kl_dock_bg)
+        // 上游 ServiceButton(FAB) / StatsBar 都是 app:backgroundTint="?colorPrimary"，
+        // dock 沿用同一套主题色：底板 drawable 是纯白，这里用 backgroundTintList 染色，
+        // 换主题（粉/蓝/…）时按钮自动跟着变，不再钉死原型取色板的 #0BA8E5。
+        backgroundTintList = ColorStateList.valueOf(context.getColorAttr(R.attr.colorPrimary))
         elevation = dp2px(8).toFloat()
 
         LayoutInflater.from(context).inflate(R.layout.layout_kl_dock, this, true)

@@ -5,7 +5,7 @@
     android:height="27dp"
     android:viewportWidth="24"
     android:viewportHeight="24"
-    android:tint="@color/kl_dock_fg">
+    android:tint="@color/white">
     <path
         android:pathData="M8,5L19,12L8,19Z"
         android:strokeWidth="2.5"

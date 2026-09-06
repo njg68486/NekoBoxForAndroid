@@ -25,7 +25,7 @@
             android:layout_height="wrap_content"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textColor="@color/kl_dock_fg"
+            android:textColor="@color/white"
             android:textSize="11sp"
             android:textStyle="bold"
             tools:text="▼ 1.76 MB/s" />
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textColor="@color/kl_dock_fg"
+            android:textColor="@color/white"
             android:textSize="11sp"
             android:textStyle="bold"
             tools:text="▲ 280 KB/s" />
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textColor="@color/kl_dock_fg"
+            android:textColor="@color/white"
             android:textSize="12sp"
             android:textStyle="bold"
             tools:text="HTTP: 79ms" />
