@@ -18,34 +18,36 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.widget.Toolbar
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.ktx.dp2px
 
 /**
- * kl 放大镜形变搜索框 v2 —— 展开/收起时序照《搜索框形变说明.md》，内容布局按用户规格：
+ * kl 放大镜形变搜索框 v3 —— 按用户 round5 规格重做：
  *
- *   展开后： [分组│全局] [ 输入框................. ] [ ❌ ]
- *            └ 左端切换钮：点击在「分组搜索」和「全局搜索」之间互相切换（无弹窗）
- *            └ 右端 ❌：收起
+ *   收起：就是一个白体放大镜图标（用户 SVG：circle(11,11,r7) + 45° 手柄，stroke 2 round），
+ *         没有任何外框 —— 挂在工具栏菜单 action 位（右侧控件组最左，＋/⋮/胶囊 的旁边）。
+ *   展开：图标整个消失，一个占满整条顶栏的搜索框：
+ *         [分组│全局] [ 输入框................. ] [ ❌ ]
  *
- * 动画（展开）：手柄 0.18s 缩没 → 宽度 0.58s cubic-bezier(.22,1,.36,1) →
- *              圆角 99→10dp 0.44s → 材质 0.32s → 内容 0.24s 后淡入。
- * 收起错峰：宽 0.52s 延迟 0.08s；圆角 0.44s 延迟 0.12s；材质 0.28s；手柄 0.28s 延迟 0.32s。
+ * 动画（展开）：图标 0.18s 淡出 → 宽度 0.58s cubic-bezier(.22,1,.36,1) 撑满 →
+ *              圆角 19→12dp 0.44s → 材质 0.32s → 内容 0.24s 后淡入。
+ * 收起错峰：宽 0.52s 延迟 0.08s；圆角 0.44s 延迟 0.12s；材质 0.28s；图标 0.28s 延迟 0.32s。
  */
 class KlMagnifierSearch @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
 ) : FrameLayout(context, attrs) {
 
     companion object {
-        private const val MAX_WIDTH_DP = 260
-        private const val COLLAPSED_WIDTH_DP = 26
+        private const val COLLAPSED_WIDTH_DP = 28
         private const val BAR_HEIGHT_DP = 38
-        private const val RADIUS_BOX_DP = 10
+        private const val RADIUS_BOX_DP = 12
 
         private val EASE = PathInterpolator(0.22f, 1f, 0.36f, 1f)
 
-        private const val BAR_BG = 0xFF2F3640.toInt()
-        private const val BAR_STROKE = 0x38FFFFFF
+        /** 展开态底色/描边（原型 .searchbar：#27343D / #43515A） */
+        private const val BAR_BG = 0xFF27343D.toInt()
+        private const val BAR_STROKE = 0xFF43515A.toInt()
         private const val SCOPE_BG = 0xFF2F7FE5.toInt()
     }
 
@@ -68,18 +70,20 @@ class KlMagnifierSearch @JvmOverloads constructor(
     private val contentRow = LinearLayout(context)
 
     init {
-        bgDrawable.setColor(Color.TRANSPARENT)
+        // 收起态：完全透明（只有图标）；材质随展开动画淡入。
+        // 上一版的 bug：初始 alpha 默认 255，收起时也画出一个白描边胶囊罩住图标。
+        bgDrawable.setColor(BAR_BG)
         bgDrawable.cornerRadius = dp2px(BAR_HEIGHT_DP) / 2f
-        bgDrawable.setStroke(dp2px(2), Color.WHITE)
+        bgDrawable.setStroke(dp2px(1), BAR_STROKE)
+        bgDrawable.alpha = 0
         background = bgDrawable
 
         addView(
             magnifier,
-            LayoutParams(dp2px(24), LayoutParams.MATCH_PARENT, Gravity.CENTER)
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER)
         )
-        // init 里撑满槽位后再无黑边；icon 视图自身保持 24dp 见方
 
-        // [分组│全局] 切换钮：短文案、胶囊底
+        // [分组│全局] 切换钮：短文案、胶囊底（原型 .search-group #2F7FE5）
         scopeButton.apply {
             setBackgroundDrawable(GradientDrawable().apply {
                 cornerRadius = dp2px(7).toFloat()
@@ -113,7 +117,7 @@ class KlMagnifierSearch @JvmOverloads constructor(
             gravity = Gravity.CENTER_VERTICAL
             visibility = ViewGroup.INVISIBLE
             alpha = 0f
-            setPadding(dp2px(6), 0, dp2px(4), 0)
+            setPadding(dp2px(8), 0, dp2px(6), 0)
             addView(
                 scopeButton,
                 LinearLayout.LayoutParams(
@@ -143,6 +147,25 @@ class KlMagnifierSearch @JvmOverloads constructor(
         })
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // 作为 menu action view 挂进来时 LayoutParams 宽可能是 WRAP_CONTENT —— 钉成收起宽
+        if (layoutParams != null && layoutParams.width <= 0) {
+            layoutParams.width = dp2px(COLLAPSED_WIDTH_DP)
+        }
+    }
+
+    /**
+     * 菜单 action view 会被 ActionMenuView 以 MATCH_PARENT 高度塞进工具栏 ——
+     * 强制 38dp 高（胶囊 34dp、分段控件 30dp，搜索条略高一点压得住视觉）。
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(
+            widthMeasureSpec,
+            MeasureSpec.makeMeasureSpec(dp2px(BAR_HEIGHT_DP), MeasureSpec.EXACTLY)
+        )
+    }
+
     /** 当前输入框文本 */
     fun queryText(): String = input.text.toString()
 
@@ -165,12 +188,15 @@ class KlMagnifierSearch @JvmOverloads constructor(
         opened = true
         onChromeToggle?.invoke(true)
 
-        magnifier.animateHandle(0f, 180) // ① 手柄缩没
+        // ① 图标整体淡出（0.18s）—— 用户要求：点开后不再显示放大镜图标
+        magnifier.animate().alpha(0f).setDuration(180).withEndAction {
+            magnifier.visibility = View.GONE
+        }.start()
 
         val target = targetWidth()
-        animateWidth(dp2px(COLLAPSED_WIDTH_DP), target, 580, 0) // ② 撑宽
+        animateWidth(dp2px(COLLAPSED_WIDTH_DP), target, 580, 0) // ② 撑满顶栏
         animateRadius(dp2px(BAR_HEIGHT_DP) / 2f, dp2px(RADIUS_BOX_DP).toFloat(), 440, 0)
-        animateMaterial(0, 255, dp2px(2), dp2px(1), 320) // ③ 材质
+        animateMaterial(0, 255, 320) // ③ 材质淡入
 
         postDelayed({
             if (!opened) return@postDelayed
@@ -196,8 +222,12 @@ class KlMagnifierSearch @JvmOverloads constructor(
 
         animateWidth(currentWidth(), dp2px(COLLAPSED_WIDTH_DP), 520, 80)
         animateRadius(dp2px(RADIUS_BOX_DP).toFloat(), dp2px(BAR_HEIGHT_DP) / 2f, 440, 120)
-        animateMaterial(255, 0, dp2px(1), dp2px(2), 280)
-        magnifier.postDelayed({ magnifier.animateHandle(1f, 280) }, 320)
+        animateMaterial(255, 0, 280)
+        magnifier.postDelayed({
+            magnifier.visibility = View.VISIBLE
+            magnifier.alpha = 0f
+            magnifier.animate().alpha(1f).setDuration(280).start()
+        }, 320)
 
         postDelayed({ onChromeToggle?.invoke(false) }, 640)
     }
@@ -207,12 +237,13 @@ class KlMagnifierSearch @JvmOverloads constructor(
     private fun currentWidth(): Int =
         layoutParams?.width?.takeIf { it > 0 } ?: dp2px(COLLAPSED_WIDTH_DP)
 
+    /** 展开目标 = 宿主 Toolbar 内容宽（标题此时已隐藏，菜单只剩搜索自己） */
     private fun targetWidth(): Int {
-        val parentWidth = (parent as? View)?.width ?: 0
-        val cap = dp2px(MAX_WIDTH_DP)
-        return if (parentWidth > 0) (parentWidth - dp2px(16)).coerceAtMost(cap)
-            .coerceAtLeast(dp2px(200))
-        else cap
+        var p: View? = this
+        while (p != null && p !is Toolbar) p = p.parent as? View
+        val toolbar = p as? Toolbar
+        val available = toolbar?.let { it.width - it.paddingLeft - it.paddingRight } ?: 0
+        return (available - dp2px(24)).coerceAtLeast(dp2px(220))
     }
 
     private fun animateWidth(from: Int, to: Int, duration: Long, delay: Long) {
@@ -241,15 +272,13 @@ class KlMagnifierSearch @JvmOverloads constructor(
         }
     }
 
-    private fun animateMaterial(fromA: Int, toA: Int, fromStroke: Int, toStroke: Int, duration: Long) {
+    private fun animateMaterial(fromA: Int, toA: Int, duration: Long) {
         ValueAnimator.ofFloat(0f, 1f).apply {
             this.duration = duration
             this.interpolator = EASE
             addUpdateListener {
                 val t = it.animatedValue as Float
                 bgDrawable.alpha = (fromA + (toA - fromA) * t).toInt()
-                val stroke = fromStroke + (toStroke - fromStroke) * t
-                bgDrawable.setStroke(stroke.toInt(), if (toA > 0) BAR_STROKE else Color.WHITE)
                 bgDrawable.invalidateSelf()
             }
             start()
@@ -261,17 +290,13 @@ class KlMagnifierSearch @JvmOverloads constructor(
 }
 
 /**
- * 放大镜图形：镜圈 + 45° 手柄（canvas 绘制，手柄可动画缩没）。
+ * 放大镜图形 —— 用户给的 SVG 原样：
+ *   viewBox 24，circle(11,11,r7)，path M16,16 → L21,21，stroke 2，round cap/join。
+ * 24×24 图形在视图内居中绘制。
  */
 class KlMagnifierIcon @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
 ) : android.view.View(context, attrs) {
-
-    init {
-        // 视图尺寸由宿主给（24dp 宽）；onDraw 里按 24×24 viewBox 居中绘制
-    }
-
-    private var handleScale = 1f
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -279,38 +304,17 @@ class KlMagnifierIcon @JvmOverloads constructor(
         strokeCap = Paint.Cap.ROUND
     }
 
-    fun animateHandle(to: Float, duration: Long) {
-        ValueAnimator.ofFloat(handleScale, to).apply {
-            this.duration = duration
-            addUpdateListener {
-                handleScale = it.animatedValue as Float
-                invalidate()
-            }
-            start()
-        }
-    }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        // 用户给的 SVG：viewBox 24，circle(11,11,r7) + path M16,16 L21,21，stroke 2，round cap/join
-        val u = dp2px(1).toFloat() // 1 SVG unit = 1dp（视图按 24dp 宽给）
+        val u = dp2px(1).toFloat() // 1 SVG unit = 1dp
         canvas.save()
-        // 24×24 图形在视图内居中（视图高度可能大于 24dp）
         canvas.translate((width - 24f * u) / 2f, (height - 24f * u) / 2f)
-        val stroke = 2f * u
-        paint.strokeWidth = stroke
+        paint.strokeWidth = 2f * u
 
         canvas.drawCircle(11f * u, 11f * u, 7f * u, paint)
 
-        if (handleScale > 0.01f) {
-            canvas.save()
-            // 手柄从圆缘 (16,16) 长出，锚点 (16,16)，45° 指向右下
-            canvas.translate(16f * u, 16f * u)
-            canvas.rotate(45f)
-            canvas.scale(handleScale, 1f)
-            canvas.drawLine(0f, 0f, 5f * u, 0f, paint)
-            canvas.restore()
-        }
+        // 手柄 M16,16 L21,21（45°，长 5 unit）
+        canvas.drawLine(16f * u, 16f * u, 21f * u, 21f * u, paint)
         canvas.restore()
     }
 }

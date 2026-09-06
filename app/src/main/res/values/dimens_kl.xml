@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 底栏选中胶囊尺寸：约槽位宽 76%（原型 .nav-item 70px 高 圆角22px 满宽药丸） -->
-    <dimen name="kl_nav_pill_width">76dp</dimen>
-    <dimen name="kl_nav_pill_height">52dp</dimen>
+    <!-- 底栏选中胶囊：短长方体（用户要求），宽 64 高 36 圆角 50% -->
+    <dimen name="kl_nav_pill_width">64dp</dimen>
+    <dimen name="kl_nav_pill_height">36dp</dimen>
 </resources>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  kl dock 内部结构（照 HTML 原型 .dock 的两个子节点）：
+  kl dock 内部结构（照 HTML 原型 .dock）：
     .dock-info  116×58   ▼下行 / ▲上行 / MODE:延迟
-    .dock-power  58×58   play / pause
-  中间 1dp 分割线 #B5E8F8 = 原型 .dock.expanded .dock-power{border-left:1px solid #b5e8f8}
+    .dock-power 58×58    play / pause
+  用户要求：info 和 power 之间不放任何分割线。
   宽度由 KlDock 用动画写，这里给的是展开态目标值。
 -->
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
@@ -52,13 +52,6 @@
             android:textStyle="bold"
             tools:text="HTTP: 79ms" />
     </LinearLayout>
-
-    <!-- 虚线分割线（用户要求：与顶栏延迟胶囊同款虚线，不用实心）。
-         KlDockDivider 必须是顶层类：XML 点号路径找不到 Kotlin 嵌套类（$ 分隔） -->
-    <io.nekohasekai.sagernet.widget.KlDockDivider
-        android:id="@+id/dock_divider"
-        android:layout_width="1dp"
-        android:layout_height="58dp" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/dock_power"

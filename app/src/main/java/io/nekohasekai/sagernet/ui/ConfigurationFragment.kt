@@ -42,8 +42,6 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import io.nekohasekai.sagernet.GroupOrder
 import io.nekohasekai.sagernet.GroupType
 import io.nekohasekai.sagernet.Key
@@ -71,7 +69,6 @@ import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.SubscriptionFoundException
 import io.nekohasekai.sagernet.ktx.alert
 import io.nekohasekai.sagernet.ktx.app
-import io.nekohasekai.sagernet.ktx.dp2px
 import io.nekohasekai.sagernet.ktx.getColorAttr
 import io.nekohasekai.sagernet.ktx.getColour
 import io.nekohasekai.sagernet.ktx.isIpAddress
@@ -152,14 +149,15 @@ class ConfigurationFragment @JvmOverloads constructor(
     OnPreferenceDataStoreChangeListener {
 
     /** kl: 顶栏胶囊当前模式。true = TCPing，false = URL Test（内存记忆，不落盘） */
+    /** TCP/HTTP 模式（内存态）。companion：dock 也要读它拼延迟行文案 */
     var klTestModeTcp = true
+        private set
 
     interface SelectCallback {
         fun returnProfile(profileId: Long)
     }
 
     lateinit var adapter: GroupPagerAdapter
-    lateinit var tabLayout: TabLayout
     lateinit var groupPager: ViewPager2
 
     val alwaysShowAddress by lazy { DataStore.alwaysShowAddress }
@@ -323,8 +321,6 @@ class ConfigurationFragment @JvmOverloads constructor(
     private var klSearchScopeAll = false
 
     private fun setupKlSearch() {
-        // 原生 SearchView 撤下，换放大镜形变控件（挂在标题右侧、菜单左侧）
-        toolbar.menu.removeItem(R.id.action_search)
         klOriginalTitle = toolbar.title
 
         val search = KlMagnifierSearch(requireContext()).apply {
@@ -339,20 +335,19 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
         search.setScopeGlobal(false)
         klSearch = search
-        toolbar.addView(
-            search,
-            Toolbar.LayoutParams(dp2px(26), dp2px(38)).apply {
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                marginStart = dp2px(6)
-            }
-        )
+        // 挂到 action_search 的 action 位（add_profile_menu 里第一个 action 项）：
+        // 视觉顺序 🔍 ＋ ⋮ [胶囊] —— 放大镜在右侧按钮组最左，紧挨其它控件，
+        // 不再像上一版那样 addView 到标题旁边。
+        toolbar.menu.findItem(R.id.action_search)?.setActionView(search)
     }
 
-    /** 搜索态替换顶栏：藏标题和全部菜单图标；收回时复原 */
+    /** 搜索态替换顶栏：藏标题和其它菜单图标（搜索自己不藏）；收回时复原 */
     private fun setToolbarChromeVisible(visible: Boolean) {
         toolbar.title = if (visible) (klOriginalTitle ?: "") else ""
         for (i in 0 until toolbar.menu.size()) {
-            toolbar.menu.getItem(i).isVisible = visible
+            val item = toolbar.menu.getItem(i)
+            if (item.itemId == R.id.action_search) continue
+            item.isVisible = visible
         }
     }
 
@@ -410,22 +405,14 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
 
         groupPager = view.findViewById(R.id.group_pager)
-        tabLayout = view.findViewById(R.id.group_tab)
+        // kl: 分组选择只在「分组」页发生 —— 禁掉左右滑切组，TabLayout 已删
+        groupPager.isUserInputEnabled = false
         adapter = GroupPagerAdapter()
         ProfileManager.addListener(adapter)
         GroupManager.addListener(adapter)
 
         groupPager.adapter = adapter
         groupPager.offscreenPageLimit = 2
-
-        TabLayoutMediator(tabLayout, groupPager) { tab, position ->
-            if (adapter.groupList.size > position) {
-                tab.text = adapter.groupList[position].displayName()
-            }
-            tab.view.setOnLongClickListener { // clear toast
-                true
-            }
-        }.attach()
 
         toolbar.setOnClickListener {
             val fragment = getCurrentGroupFragment()
@@ -979,24 +966,32 @@ class ConfigurationFragment @JvmOverloads constructor(
     //    和上游一样；FlClash 的「快」来自这个并发池，不是弹窗。
     //  · 每个结果到库即刷卡片（updateProfile），不等整组测完 —— 用户立刻看到延迟染色。
 
-    /** TCP / URL 双模式入口；dock 的信息区点击也走这里 */
+    /** TCP / URL 双模式入口；dock 的信息区点击也走这里（静默：无任何 snackbar） */
     fun klRunLatencyTest() {
-        klRunLatencyTest(klTestModeTcp)
+        klRunLatencyTest(klTestModeTcp, notify = false)
     }
 
-    fun klRunLatencyTest(tcpMode: Boolean) {
+    /**
+     * @param notify true = 顶栏胶囊触发：开始/完成都有 snackbar
+     *               false = dock 信息区触发：完全静默，测试状态写进 dock 延迟行
+     */
+    fun klRunLatencyTest(tcpMode: Boolean, notify: Boolean = true) {
         if (DataStore.runningTest) return else DataStore.runningTest = true
         // kl: 测试反馈 —— 胶囊转圈 + 开始 snackbar（静默测试不能毫无指示）。
         // 注意 group 的获取移进了 try：万一 DB 抖一下抛异常，runningTest 也要在
         // finally 里复位，否则一次异常后所有测试入口永久失效（表现为点了没反应）。
         klTestCapsule?.setTesting(true)
-        (activity as? MainActivity)?.snackbar(
-            getString(
-                R.string.kl_test_started,
-                SagerDatabase.proxyDao.countByGroup(DataStore.currentGroupId()),
-                if (tcpMode) "TCP" else "HTTP"
-            )
-        )?.show()
+        if (notify) {
+            (activity as? MainActivity)?.snackbar(
+                getString(
+                    R.string.kl_test_started,
+                    SagerDatabase.proxyDao.countByGroup(DataStore.currentGroupId()),
+                    if (tcpMode) "TCP" else "HTTP"
+                )
+            )?.show()
+        } else {
+            (activity as? MainActivity)?.klDockLatency(if (tcpMode) "TCP" else "HTTP", getString(R.string.kl_testing))
+        }
         val testJobs = mutableListOf<Job>()
 
         runOnDefaultDispatcher {
@@ -1044,10 +1039,16 @@ class ConfigurationFragment @JvmOverloads constructor(
             } finally {
                 GroupManager.postReload(DataStore.currentGroupId())
                 DataStore.runningTest = false
-                // 复位胶囊 + 完成提示（主线程）
+                // 复位胶囊 + 完成提示（主线程）。胶囊触发才有 snackbar；
+                // dock 触发的把结果写进 dock 延迟行（当前选中节点的延迟）。
                 runOnMainDispatcher {
                     klTestCapsule?.setTesting(false)
-                    (activity as? MainActivity)?.snackbar(R.string.kl_test_done)?.show()
+                    val main = activity as? MainActivity
+                    if (notify) {
+                        main?.snackbar(R.string.kl_test_done)?.show()
+                    } else {
+                        main?.klDockLatencyFromDb()
+                    }
                 }
             }
         }
@@ -1168,9 +1169,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                                 if (newSelectedGroupIndex != null) {
                                     groupPager.setCurrentItem(selectedGroupIndex, false)
                                 }
-                                val hideTab = groupList.size < 2
-                                tabLayout.isGone = hideTab
-                                toolbar.elevation = if (hideTab) 0F else dp2px(4).toFloat()
+                                toolbar.elevation = 0F
                                 if (!select) {
                                     groupPager.registerOnPageChangeCallback(updateSelectedCallback)
                                 }
@@ -1208,15 +1207,9 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
 
         override suspend fun groupAdd(group: ProxyGroup) {
-            tabLayout.post {
+            groupPager.post {
                 groupList.add(group)
-
-                if (groupList.any { !it.ungrouped }) tabLayout.post {
-                    tabLayout.visibility = View.VISIBLE
-                }
-
                 notifyItemInserted(groupList.size - 1)
-                tabLayout.getTabAt(groupList.size - 1)?.select()
             }
         }
 
@@ -1224,20 +1217,13 @@ class ConfigurationFragment @JvmOverloads constructor(
             val index = groupList.indexOfFirst { it.id == groupId }
             if (index == -1) return
 
-            tabLayout.post {
+            groupPager.post {
                 groupList.removeAt(index)
                 notifyItemRemoved(index)
             }
         }
 
-        override suspend fun groupUpdated(group: ProxyGroup) {
-            val index = groupList.indexOfFirst { it.id == group.id }
-            if (index == -1) return
-
-            tabLayout.post {
-                tabLayout.getTabAt(index)?.text = group.displayName()
-            }
-        }
+        override suspend fun groupUpdated(group: ProxyGroup) = Unit
 
         override suspend fun groupUpdated(groupId: Long) = Unit
 

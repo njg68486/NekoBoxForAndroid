@@ -20,16 +20,15 @@
         android:layout_height="match_parent" />
 
     <!--
-      dock 悬挂修复：anchor top|end 只把 dock 顶边钉在底栏顶边，58dp 的 dock 会向下
-      压到底栏上。改用 translationY 把整个 dock 提到底栏上方：dock.bottom = nav.top - 10dp。
-      nav 高度随手势条变化时 nav.top 一起移动，锚点会带着 dock 走，无需代码干预。
+      dock 悬挂：dock.bottom = nav.top - 6dp（用户要求贴近底栏只留一点缝）。
+      nav 高度随手势条变化时锚点带着 dock 走，无需代码干预。
     -->
     <io.nekohasekai.sagernet.widget.KlDock
         android:id="@+id/dock"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
         android:layout_marginEnd="10dp"
-        android:translationY="-68dp"
+        android:translationY="-64dp"
         app:layout_anchor="@id/bottom_nav"
         app:layout_anchorGravity="top|end" />
 

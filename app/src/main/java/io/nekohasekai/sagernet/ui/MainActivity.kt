@@ -36,6 +36,7 @@ import io.nekohasekai.sagernet.bg.SagerConnection
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.GroupManager
 import io.nekohasekai.sagernet.database.ProfileManager
+import libcore.Libcore
 import io.nekohasekai.sagernet.database.ProxyGroup
 import io.nekohasekai.sagernet.database.SubscriptionBean
 import io.nekohasekai.sagernet.database.preference.OnPreferenceDataStoreChangeListener
@@ -53,6 +54,7 @@ import io.nekohasekai.sagernet.ktx.onMainDispatcher
 import io.nekohasekai.sagernet.ktx.parseProxies
 import io.nekohasekai.sagernet.ktx.readableMessage
 import io.nekohasekai.sagernet.ktx.runOnDefaultDispatcher
+import io.nekohasekai.sagernet.ktx.runOnMainDispatcher
 import io.nekohasekai.sagernet.ui.MessageStore
 import io.nekohasekai.sagernet.ktx.Logs
 import moe.matsuri.nb4a.utils.Util
@@ -102,7 +104,14 @@ class MainActivity : ThemedActivity(),
 
         // kl dock：右侧 power 起停服务，左侧信息区点一下跑当前分组延迟测试（原型 dock-test）
         binding.dock.onPowerClick = {
-            if (DataStore.serviceState.canStop) SagerNet.stopService() else connect.launch(null)
+            if (Libcore.versionBox() == "stub") {
+                // stub 调试包核心是空壳，连 VPN 只会静默失败 —— 明说，不给假象
+                snackbar(R.string.kl_core_not_ready).show()
+            } else if (DataStore.serviceState.canStop) {
+                SagerNet.stopService()
+            } else {
+                connect.launch(null)
+            }
         }
         binding.dock.onTestClick = {
             (currentMainFragment as? ConfigurationFragment)?.klRunLatencyTest()
@@ -202,6 +211,29 @@ class MainActivity : ThemedActivity(),
             }
         } catch (e: Exception) {
             Logs.w("Failed to set excludeFromRecents: ${e.message}")
+        }
+    }
+
+    /** kl: dock 延迟行 —— 直接写文案（如「TCP: 测试中」） */
+    fun klDockLatency(mode: String, text: String) {
+        binding.dock.setLatency(mode, text)
+    }
+
+    /** kl: dock 延迟行 —— 从库里读当前选中节点的 ping；没有就显示 -- */
+    fun klDockLatencyFromDb() {
+        val mode = (currentMainFragment as? ConfigurationFragment)?.klTestModeTcp
+        val modeText = when (mode) {
+            false -> "HTTP"
+            else -> "TCP"
+        }
+        runOnDefaultDispatcher {
+            val profile = try {
+                ProfileManager.getProfile(DataStore.selectedProxy)
+            } catch (e: Exception) {
+                null
+            }
+            val ping = profile?.ping?.takeIf { it > 0 }?.toString()?.plus("ms") ?: "--"
+            runOnMainDispatcher { klDockLatency(modeText, ping) }
         }
     }
 
@@ -460,6 +492,10 @@ class MainActivity : ThemedActivity(),
         refreshConfigurationProfileState()
 
         binding.dock.changeState(state, animate)
+        if (state == BaseService.State.Connected) {
+            // 连上后延迟行显示当前节点 ping（没测过就 --）
+            klDockLatencyFromDb()
+        }
         syncMainControls(
             showWhenConnected = state == BaseService.State.Connected,
             animate = animateControls,
