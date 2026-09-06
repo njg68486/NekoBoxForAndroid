@@ -1,132 +1,197 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  kl 分组卡片：外层套 KlSwipeRevealLayout。
+  · 第一个子节点 = 原上游卡片内容（一行没改语义）
+  · 第二个子节点 kl_swipe_reveal = 左滑露出的正方形删除面板，
+    贴右边缘、盖住 edit / options 两个键。
+-->
+<io.nekohasekai.sagernet.widget.KlSwipeRevealLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content"
-    style="@style/Widget.SagerNet.CardView.Elevated"
+    android:id="@+id/kl_swipe_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="4dp">
+    android:layout_height="wrap_content">
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/content"
+        style="@style/Widget.SagerNet.CardView.Elevated"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="bottom"
-        android:orientation="vertical">
-
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/subscription_update_progress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone"
-            app:indicatorColor="?colorPrimary" />
+        android:layout_margin="4dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:gravity="bottom"
+            android:orientation="vertical">
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/subscription_update_progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:indicatorColor="?colorPrimary" />
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:paddingStart="15dp"
-                android:paddingTop="15dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="12dp">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/group_name"
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:paddingStart="15dp"
+                    android:paddingTop="15dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:id="@+id/group_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:textStyle="bold"
+                        tools:text="@string/group_name" />
+
+                    <TextView
+                        android:id="@+id/group_user"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:textColor="?android:attr/textColorSecondary"
+                        tools:text="user name" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/drag_handle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/kl_drag_sort"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_kl_drag_handle" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/edit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/edit"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_image_edit" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/options"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:focusable="true"
+                    android:nextFocusLeft="@+id/container"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_baseline_more_vert_24" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginBottom="4dp"
+                android:gravity="bottom">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:layout_weight="1"
+                    android:gravity="bottom"
+                    android:orientation="vertical"
+                    android:paddingStart="12.5dp"
+                    android:paddingTop="8dp">
+
+                    <TextView
+                        android:id="@+id/group_traffic"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:textColor="?android:textColorSecondary"
+                        android:visibility="gone"
+                        tools:text="@string/subscription_traffic" />
+
+                    <TextView
+                        android:id="@+id/group_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:textColor="?android:textColorSecondary"
+                        tools:text="@string/group_status_empty" />
+
+                    <!-- kl: 创建·M-d（createdAt=0 的旧数据不显示） -->
+                    <TextView
+                        android:id="@+id/group_created"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:textColor="?android:textColorSecondary"
+                        android:visibility="gone"
+                        tools:text="创建·2026-6-6" />
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/group_update"
+                    style="?attr/borderlessButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:textStyle="bold"
-                    tools:text="@string/group_name" />
-
-                <TextView
-                    android:id="@+id/group_user"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?android:attr/textColorSecondary"
-                    tools:text="user name" />
+                    android:text="@string/group_update"
+                    android:textColor="?android:textColorSecondary" />
             </LinearLayout>
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/edit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/edit"
-                android:focusable="true"
-                android:padding="12dp"
-                app:srcCompat="@drawable/ic_image_edit" />
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/options"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:focusable="true"
-                android:nextFocusLeft="@+id/container"
-                android:padding="12dp"
-                app:srcCompat="@drawable/ic_baseline_more_vert_24" />
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginLeft="4dp"
-            android:layout_marginRight="4dp"
-            android:layout_marginBottom="4dp"
-            android:gravity="bottom">
+    </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:layout_weight="1"
-                android:gravity="bottom"
-                android:orientation="vertical"
-                android:paddingStart="12.5dp"
-                android:paddingTop="8dp">
+    <!-- 左滑露出的删除面板：宽度在 KlSwipeRevealLayout.onMeasure 里被改成正方形边长 -->
+    <LinearLayout
+        android:id="@+id/kl_swipe_reveal"
+        android:layout_width="72dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:layout_margin="4dp"
+        android:background="@drawable/kl_delete_reveal_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:visibility="invisible">
 
-                <TextView
-                    android:id="@+id/group_traffic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?android:textColorSecondary"
-                    android:visibility="gone"
-                    tools:text="@string/subscription_traffic" />
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="@string/delete"
+            app:srcCompat="@drawable/ic_baseline_delete_24"
+            app:tint="@color/kl_delete_fg" />
 
-                <TextView
-                    android:id="@+id/group_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?android:textColorSecondary"
-                    tools:text="@string/group_status_empty" />
-
-            </LinearLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/group_update"
-                style="?attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="@string/group_update"
-                android:textColor="?android:textColorSecondary" />
-        </LinearLayout>
-
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/delete"
+            android:textColor="@color/kl_delete_fg"
+            android:textSize="15sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-</com.google.android.material.card.MaterialCardView>
+</io.nekohasekai.sagernet.widget.KlSwipeRevealLayout>

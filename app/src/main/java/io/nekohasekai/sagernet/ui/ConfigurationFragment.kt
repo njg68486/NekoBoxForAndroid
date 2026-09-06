@@ -149,6 +149,9 @@ class ConfigurationFragment @JvmOverloads constructor(
     SearchView.OnQueryTextListener,
     OnPreferenceDataStoreChangeListener {
 
+    /** kl: 顶栏胶囊当前模式。true = TCPing，false = URL Test（内存记忆，不落盘） */
+    var klTestModeTcp = true
+
     interface SelectCallback {
         fun returnProfile(profileId: Long)
     }
@@ -331,6 +334,16 @@ class ConfigurationFragment @JvmOverloads constructor(
             toolbar.inflateMenu(R.menu.add_profile_menu)
             toolbar.menu.findItem(R.id.action_global_mode)?.isChecked = DataStore.globalMode
             toolbar.setOnMenuItemClickListener(this)
+            // kl: 把「TCPing / URL Test」从 ☰ 子菜单挪到顶栏，做成
+            // 圆角框 + 虚线分割的连体胶囊（对应原型 .top-capsule）
+            if (toolbar.menu.findItem(R.id.action_connection_tcp_ping) == null) {
+                toolbar.menu.add(0, R.id.action_connection_tcp_ping, 0, getString(R.string.connection_test_tcp_ping))
+                    .setIcon(R.drawable.ic_baseline_compare_arrows_24)
+                    .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                toolbar.menu.add(0, R.id.action_connection_url_test, 1, getString(R.string.connection_test_url_test))
+                    .setIcon(R.drawable.ic_baseline_speed_24)
+                    .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
+            }
         } else {
             toolbar.setTitle(titleRes)
             toolbar.setNavigationIcon(R.drawable.ic_navigation_close)
@@ -866,11 +879,15 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
 
             R.id.action_connection_tcp_ping -> {
-                pingTest(false)
+                // kl: 顶栏胶囊左半 —— TCPing 模式 + 立即开测（静默并发）
+                klTestModeTcp = true
+                klRunLatencyTest(true)
             }
 
             R.id.action_connection_url_test -> {
-                urlTest()
+                // kl: 顶栏胶囊右半 —— URL Test 模式 + 立即开测
+                klTestModeTcp = false
+                klRunLatencyTest(false)
             }
 
             R.id.action_global_mode -> {
@@ -1004,214 +1021,121 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    @Suppress("EXPERIMENTAL_API_USAGE")
-    fun pingTest(icmpPing: Boolean) {
+    // ==================== kl: FlClash 风格静默延迟测试 ====================
+    //
+    // 与上游的差异：
+    //  · 不再有 TestDialog 弹窗、不再有「最小化到通知」分支 —— 完全静默，
+    //    点胶囊直接开测，结果逐条刷在节点卡上（ping/status/error 落库 + postReload）。
+    //  · 并发模型保留 DataStore.connectionTestConcurrent 个 worker 抢 ConcurrentLinkedQueue，
+    //    和上游一样；FlClash 的「快」来自这个并发池，不是弹窗。
+    //  · 每个结果到库即刷卡片（updateProfile），不等整组测完 —— 用户立刻看到延迟染色。
+
+    /** TCP / URL 双模式入口；dock 的信息区点击也走这里 */
+    fun klRunLatencyTest() {
+        klRunLatencyTest(klTestModeTcp)
+    }
+
+    fun klRunLatencyTest(tcpMode: Boolean) {
         if (DataStore.runningTest) return else DataStore.runningTest = true
-        val test = TestDialog()
-        val dialog = test.builder.show()
-        val testJobs = mutableListOf<Job>()
         val group = DataStore.currentGroup()
+        val testJobs = mutableListOf<Job>()
 
-        val mainJob = runOnDefaultDispatcher {
-            val profilesList = SagerDatabase.proxyDao.getByGroup(group.id).filter {
-                if (icmpPing) {
-                    if (it.requireBean().canICMPing()) {
-                        return@filter true
-                    }
-                } else {
-                    if (it.requireBean().canTCPing()) {
-                        return@filter true
-                    }
-                }
-                return@filter false
-            }
-            test.proxyN = profilesList.size
-            val profiles = ConcurrentLinkedQueue(profilesList)
-            repeat(DataStore.connectionTestConcurrent) {
-                testJobs.add(launch(Dispatchers.IO) {
-                    while (isActive) {
-                        val profile = profiles.poll() ?: break
+        runOnDefaultDispatcher {
+            try {
+                val profilesQueue = ConcurrentLinkedQueue(
+                    SagerDatabase.proxyDao.getByGroup(group.id)
+                )
 
-                        profile.status = 0
-                        var address = profile.requireBean().serverAddress
-                        if (!address.isIpAddress()) {
+                repeat(DataStore.connectionTestConcurrent) {
+                    testJobs.add(launch(Dispatchers.IO) {
+                        val urlTest = UrlTest() // NOT in bg process
+                        while (isActive) {
+                            val profile = profilesQueue.poll() ?: break
+                            profile.status = 0
                             try {
-                                SagerNet.underlyingNetwork!!.getAllByName(address).apply {
-                                    if (isNotEmpty()) {
-                                        address = this[0].hostAddress
-                                    }
-                                }
-                            } catch (ignored: UnknownHostException) {
-                            }
-                        }
-                        if (!isActive) break
-                        if (!address.isIpAddress()) {
-                            profile.status = 2
-                            profile.error = app.getString(R.string.connection_test_domain_not_found)
-                            test.update(profile)
-                            continue
-                        }
-                        try {
-                            if (icmpPing) {
-                                // removed
-                            } else {
-                                val socket =
-                                    SagerNet.underlyingNetwork?.socketFactory?.createSocket()
-                                        ?: Socket()
-                                try {
-                                    socket.soTimeout = 3000
-                                    socket.bind(InetSocketAddress(0))
-                                    val start = SystemClock.elapsedRealtime()
-                                    socket.connect(
-                                        InetSocketAddress(
-                                            address, profile.requireBean().serverPort
-                                        ), 3000
-                                    )
-                                    if (!isActive) break
+                                if (tcpMode) {
+                                    // TCPing：直连 socket 握手计时（复用上游 pingTest 的判定分支）
+                                    klTcpingOnce(profile)
+                                } else {
+                                    val result = urlTest.doTest(profile)
                                     profile.status = 1
-                                    profile.ping = (SystemClock.elapsedRealtime() - start).toInt()
-                                    test.update(profile)
-                                } finally {
-                                    socket.closeQuietly()
+                                    profile.ping = result
                                 }
-                            }
-                        } catch (e: Exception) {
-                            if (!isActive) break
-                            val message = e.readableMessage
-
-                            if (icmpPing) {
+                            } catch (e: PluginManager.PluginNotFoundException) {
                                 profile.status = 2
-                                profile.error = getString(R.string.connection_test_unreachable)
-                            } else {
-                                profile.status = 2
-                                when {
-                                    !message.contains("failed:") -> profile.error =
-                                        getString(R.string.connection_test_timeout_error)
-
-                                    else -> when {
-                                        message.contains("ECONNREFUSED") -> {
-                                            profile.error =
-                                                getString(R.string.connection_test_refused)
-                                        }
-
-                                        message.contains("ENETUNREACH") -> {
-                                            profile.error =
-                                                getString(R.string.connection_test_unreachable)
-                                        }
-
-                                        else -> {
-                                            profile.status = 3
-                                            profile.error = message
-                                        }
-                                    }
-                                }
+                                profile.error = e.readableMessage
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                profile.status = 3
+                                profile.error = e.readableMessage
                             }
-                            test.update(profile)
+                            // 结果到库即刷：不等整组完成
+                            try {
+                                ProfileManager.updateProfile(profile)
+                            } catch (e: Exception) {
+                                Logs.w(e)
+                            }
                         }
-                    }
-                })
-            }
-
-            testJobs.joinAll()
-
-            runOnMainDispatcher {
-                test.cancel()
-            }
-        }
-        test.cancel = {
-            test.dialogStatus.set(2)
-            dialog.dismiss()
-            runOnDefaultDispatcher {
-                mainJob.cancel()
-                testJobs.forEach { it.cancel() }
-                test.results.forEach {
-                    try {
-                        ProfileManager.updateProfile(it)
-                    } catch (e: Exception) {
-                        Logs.w(e)
-                    }
+                    })
                 }
+
+                testJobs.joinAll()
+            } finally {
                 GroupManager.postReload(DataStore.currentGroupId())
                 DataStore.runningTest = false
             }
-        }
-        test.minimize = {
-            test.dialogStatus.set(1)
-            test.notification = ConnectionTestNotification(
-                dialog.context,
-                "[${group.displayName()}] ${getString(R.string.connection_test)}"
-            )
-            dialog.hide()
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    fun urlTest() {
-        if (DataStore.runningTest) return else DataStore.runningTest = true
-        val test = TestDialog()
-        val dialog = test.builder.show()
-        val testJobs = mutableListOf<Job>()
-        val group = DataStore.currentGroup()
-
-        val mainJob = runOnDefaultDispatcher {
-            val profilesList = SagerDatabase.proxyDao.getByGroup(group.id)
-            test.proxyN = profilesList.size
-            val profiles = ConcurrentLinkedQueue(profilesList)
-            repeat(DataStore.connectionTestConcurrent) {
-                testJobs.add(launch(Dispatchers.IO) {
-                    val urlTest = UrlTest() // note: this is NOT in bg process
-                    while (isActive) {
-                        val profile = profiles.poll() ?: break
-                        profile.status = 0
-
-                        try {
-                            val result = urlTest.doTest(profile)
-                            profile.status = 1
-                            profile.ping = result
-                        } catch (e: PluginManager.PluginNotFoundException) {
-                            profile.status = 2
-                            profile.error = e.readableMessage
-                        } catch (e: Exception) {
-                            profile.status = 3
-                            profile.error = e.readableMessage
-                        }
-
-                        test.update(profile)
-                    }
-                })
-            }
-
-            testJobs.joinAll()
-
-            runOnMainDispatcher {
-                test.cancel()
+    /** 单节点 TCPing（逻辑从上游 pingTest 内联函数抽出来复用） */
+    private fun klTcpingOnce(profile: ProxyEntity) {
+        var address = profile.requireBean().serverAddress
+        if (!address.isIpAddress()) {
+            try {
+                SagerNet.underlyingNetwork!!.getAllByName(address).apply {
+                    if (isNotEmpty()) address = this[0].hostAddress
+                }
+            } catch (ignored: UnknownHostException) {
             }
         }
-        test.cancel = {
-            test.dialogStatus.set(2)
-            dialog.dismiss()
-            runOnDefaultDispatcher {
-                mainJob.cancel()
-                testJobs.forEach { it.cancel() }
-                test.results.forEach {
-                    try {
-                        ProfileManager.updateProfile(it)
-                    } catch (e: Exception) {
-                        Logs.w(e)
+        if (!address.isIpAddress()) {
+            profile.status = 2
+            profile.error = app.getString(R.string.connection_test_domain_not_found)
+            return
+        }
+        try {
+            val socket = SagerNet.underlyingNetwork?.socketFactory?.createSocket() ?: Socket()
+            try {
+                socket.soTimeout = 3000
+                socket.bind(InetSocketAddress(0))
+                val start = SystemClock.elapsedRealtime()
+                socket.connect(InetSocketAddress(address, profile.requireBean().serverPort), 3000)
+                profile.status = 1
+                profile.ping = (SystemClock.elapsedRealtime() - start).toInt()
+            } finally {
+                socket.closeQuietly()
+            }
+        } catch (e: Exception) {
+            val message = e.readableMessage
+            profile.status = 2
+            when {
+                !message.contains("failed:") -> profile.error =
+                    getString(R.string.connection_test_timeout_error)
+
+                else -> when {
+                    message.contains("ECONNREFUSED") -> profile.error =
+                        getString(R.string.connection_test_refused)
+
+                    message.contains("ENETUNREACH") -> profile.error =
+                        getString(R.string.connection_test_unreachable)
+
+                    else -> {
+                        profile.status = 3
+                        profile.error = message
                     }
                 }
-                GroupManager.postReload(DataStore.currentGroupId())
-                DataStore.runningTest = false
             }
-        }
-        test.minimize = {
-            test.dialogStatus.set(1)
-            test.notification = ConnectionTestNotification(
-                dialog.context,
-                "[${group.displayName()}] ${getString(R.string.connection_test)}"
-            )
-            dialog.hide()
         }
     }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kl dock：HTML 原型 .dock 的 border-radius:17px + background:#0BA8E5 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/kl_dock" />
+    <corners android:radius="17dp" />
+</shape>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kl 魔改配色（CSS 变量来自 HTML 原型）：dock #0BA8E5 / 前景 #123047 / 分割线 #B5E8F8 -->
+<resources>
+    <color name="kl_dock">#0BA8E5</color>
+    <color name="kl_dock_fg">#123047</color>
+    <color name="kl_dock_divider">#B5E8F8</color>
+
+    <!-- 左滑删除面板（照用户给的样式图取色） -->
+    <color name="kl_delete_bg">#4A3A3E</color>
+    <color name="kl_delete_stroke">#6E555A</color>
+    <color name="kl_delete_fg">#F2A6B0</color>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kl: 二级导航 id（软件设置），不在底栏，只在设置 hub 内部路由 -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_app_settings"
+        android:title="@string/kl_settings_app" />
+</menu>

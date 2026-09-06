@@ -21,7 +21,13 @@ data class ProxyGroup(
     var order: Int = GroupOrder.ORIGIN,
     var isSelector: Boolean = false,
     var frontProxy: Long = -1L,
-    var landingProxy: Long = -1L
+    var landingProxy: Long = -1L,
+    /**
+     * kl: 卡片创建时间（epoch ms），用于「本地」分段按创建时间排序 + 卡片显示「创建·M-d」。
+     * defaultValue 不能少：Room AutoMigration 给存量行回填 0，KSP 才肯放行。
+     */
+    @ColumnInfo(defaultValue = "0")
+    var createdAt: Long = 0L,
 ) : Serializable() {
 
     @Transient

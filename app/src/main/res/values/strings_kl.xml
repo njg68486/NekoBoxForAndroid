@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  kl 新增文案。上游 strings.xml 一行不碰（Android 会合并 values/*.xml）。
+  底栏第三项上游中文叫「路由」，用户要求叫「分流」，所以单独起 key，
+  不去改 menu_route —— 那个 key 还被路由设置页等处复用。
+-->
+<resources>
+    <string name="kl_nav_route">Route</string>
+    <string name="kl_settings_app">App settings</string>
+    <string name="kl_dock_test">Latency test</string>
+    <string name="kl_drag_sort">Drag to sort</string>
+    <string name="kl_search_scope_group">This group</string>
+    <string name="kl_search_scope_all">All groups</string>
+    <string name="kl_search_hint">Search proxies</string>
+    <string name="kl_tab_default">Default</string>
+    <string name="kl_tab_sub">Subscriptions</string>
+    <string name="kl_tab_local">Local</string>
+    <string name="kl_sort_default">Default</string>
+    <string name="kl_sort_asc">Ascending</string>
+    <string name="kl_sort_desc">Descending</string>
+    <string name="kl_created_at">Created %s</string>
+</resources>

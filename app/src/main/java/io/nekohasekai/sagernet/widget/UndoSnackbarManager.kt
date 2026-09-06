@@ -37,7 +37,10 @@ class UndoSnackbarManager<in T>(
     fun remove(items: Collection<Pair<Int, T>>) {
         recycleBin.addAll(items)
         val count = recycleBin.size
-        activity.snackbar(activity.resources.getQuantityString(R.plurals.removed, count, count))
+        // kl: 撤销条压到左半屏，右半屏留给 dock（启动按钮 + 展开后的信息区）
+        KlSnackbar.halfWidth(
+            activity.snackbar(activity.resources.getQuantityString(R.plurals.removed, count, count))
+        )
             .apply {
                 addCallback(removedCallback)
                 setAction(R.string.undo) {

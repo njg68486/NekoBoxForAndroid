@@ -19,7 +19,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceDataStore
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.navigation.NavigationView
+import androidx.core.view.isVisible
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.snackbar.Snackbar
 import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.GroupType
@@ -57,11 +58,10 @@ import moe.matsuri.nb4a.utils.Util
 
 class MainActivity : ThemedActivity(),
     SagerConnection.Callback,
-    OnPreferenceDataStoreChangeListener,
-    NavigationView.OnNavigationItemSelectedListener {
+    OnPreferenceDataStoreChangeListener {
 
     lateinit var binding: LayoutMainBinding
-    lateinit var navigation: NavigationView
+    lateinit var navigation: BottomNavigationView
     private var currentMainFragment: ToolbarFragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,18 +70,20 @@ class MainActivity : ThemedActivity(),
         val animateInitialControls = savedInstanceState == null
 
         binding = LayoutMainBinding.inflate(layoutInflater)
-        binding.fab.initProgress(binding.fabProgress)
-        if (themeResId !in intArrayOf(
-                R.style.Theme_SagerNet_Black
-            )
-        ) {
-            navigation = binding.navView
-            binding.drawerLayout.removeView(binding.navViewBlack)
-        } else {
-            navigation = binding.navViewBlack
-            binding.drawerLayout.removeView(binding.navView)
+
+        // kl: 侧边抽屉整个下线，导航搬到底部四按钮
+        navigation = binding.bottomNav
+        navigation.setOnItemSelectedListener { item ->
+            if (item.itemId == navigation.selectedItemId &&
+                supportFragmentManager.findFragmentById(R.id.fragment_holder) != null
+            ) {
+                true
+            } else {
+                displayFragmentWithId(item.itemId)
+            }
         }
-        navigation.setNavigationItemSelectedListener(this)
+        // 选中反馈交给 activeIndicator 那个圆角胶囊，去掉方形槽位 ripple
+        navigation.itemRippleColor = null
 
         if (savedInstanceState == null) {
             displayFragmentWithId(R.id.nav_configuration)
@@ -97,12 +99,13 @@ class MainActivity : ThemedActivity(),
             }
         }
 
-        binding.fab.setOnClickListener {
-            if (DataStore.serviceState.canStop) SagerNet.stopService() else connect.launch(
-                null
-            )
+        // kl dock：右侧 power 起停服务，左侧信息区点一下跑当前分组延迟测试（原型 dock-test）
+        binding.dock.onPowerClick = {
+            if (DataStore.serviceState.canStop) SagerNet.stopService() else connect.launch(null)
         }
-        binding.stats.setOnClickListener { if (DataStore.serviceState.connected) binding.stats.testConnection() }
+        binding.dock.onTestClick = {
+            (currentMainFragment as? ConfigurationFragment)?.klRunLatencyTest()
+        }
 
         setContentView(binding.root)
         currentMainFragment =
@@ -360,51 +363,28 @@ class MainActivity : ThemedActivity(),
             .show()
     }
 
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        if (item.isChecked) binding.drawerLayout.closeDrawers() else {
-            return displayFragmentWithId(item.itemId)
-        }
-        return true
-    }
-
-
     @SuppressLint("CommitTransaction")
     fun displayFragment(fragment: ToolbarFragment) {
         currentMainFragment = fragment
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_holder, fragment)
             .commitAllowingStateLoss()
-        binding.drawerLayout.closeDrawers()
         syncMainControls(fragment, showWhenConnected = false, animate = true)
     }
 
+    /**
+     * kl: dock 只在「配置」页出现（原型里 dock 就挂在首页节点列表末尾）。
+     * showBottomBar 这个上游开关继续沿用：打开后所有页面都显示 dock。
+     */
     private fun syncMainControls(
         fragment: Any? = currentMainFragment
             ?: supportFragmentManager.findFragmentById(R.id.fragment_holder),
-        showWhenConnected: Boolean,
+        @Suppress("UNUSED_PARAMETER") showWhenConnected: Boolean,
         animate: Boolean,
     ) {
-        val showControls = fragment is ConfigurationFragment || DataStore.showBottomBar
-        binding.stats.useExternalScrollDriver = fragment is ConfigurationFragment
-        binding.stats.syncMainControls(
-            showControls,
-            DataStore.serviceState,
-            showWhenConnected,
-            animate,
-        )
-        binding.fab.animate().cancel()
-        if (showControls) {
-            binding.fab.show()
-        } else {
-            binding.fab.hideProgress()
-            binding.fabProgress.hide()
-            binding.fabProgress.visibility = View.INVISIBLE
-            if (animate && binding.fab.isLaidOut) {
-                binding.fab.hide()
-            } else {
-                binding.fab.visibility = View.INVISIBLE
-            }
-        }
+        val showDock = fragment is ConfigurationFragment || DataStore.showBottomBar
+        binding.dock.isVisible = showDock
+        if (showDock) binding.dock.changeState(DataStore.serviceState, animate)
     }
 
     private fun refreshConfigurationProfileState() {
@@ -413,9 +393,9 @@ class MainActivity : ThemedActivity(),
         (fragment as? ConfigurationFragment)?.refreshProfileState()
     }
 
-    fun driveBottomBar(scrollDy: Int) {
-        binding.stats.onListScrolled(scrollDy)
-    }
+    /** kl: dock 是固定位置的，列表滚动不再驱动底栏隐藏 */
+    @Suppress("UNUSED_PARAMETER")
+    fun driveBottomBar(scrollDy: Int) = Unit
 
     fun displayFragmentWithId(@IdRes id: Int): Boolean {
         when (id) {
@@ -425,7 +405,9 @@ class MainActivity : ThemedActivity(),
 
             R.id.nav_group -> displayFragment(GroupFragment())
             R.id.nav_route -> displayFragment(RouteFragment())
-            R.id.nav_settings -> displayFragment(SettingsFragment())
+            R.id.nav_settings -> displayFragment(KlSettingsHubFragment())
+            // 以下四项不在底栏，从「设置」页二级进入
+            R.id.nav_app_settings -> displayFragment(SettingsFragment())
             R.id.nav_traffic -> displayFragment(WebviewFragment())
             R.id.nav_tools -> displayFragment(ToolsFragment())
             R.id.nav_logcat -> displayFragment(LogcatFragment())
@@ -438,7 +420,14 @@ class MainActivity : ThemedActivity(),
 
             else -> return false
         }
-        navigation.menu.findItem(id).isChecked = true
+        // 二级页（日志/工具/文档/关于/软件设置）不在底栏菜单里，findItem 会返回 null；
+        // 此时把底栏高亮停在「设置」上，保持所属关系可见。
+        val item = navigation.menu.findItem(id)
+        if (item != null) {
+            item.isChecked = true
+        } else {
+            navigation.menu.findItem(R.id.nav_settings)?.isChecked = true
+        }
         return true
     }
 
@@ -451,8 +440,7 @@ class MainActivity : ThemedActivity(),
         DataStore.serviceState = state
         refreshConfigurationProfileState()
 
-        binding.fab.changeState(state, DataStore.serviceState, animate)
-        binding.stats.changeState(state)
+        binding.dock.changeState(state, animate)
         syncMainControls(
             showWhenConnected = state == BaseService.State.Connected,
             animate = animateControls,
@@ -460,12 +448,13 @@ class MainActivity : ThemedActivity(),
         if (msg != null) snackbar(getString(R.string.vpn_error, msg)).show()
     }
 
+    /**
+     * kl: 不再 anchor 到 FAB。dock 固定在右下，Snackbar 抬到底栏上方即可；
+     * 撤销删除那条会被 KlSnackbar 进一步压成左半屏，正好和 dock 并排不重叠。
+     */
     override fun snackbarInternal(text: CharSequence): Snackbar {
         return Snackbar.make(binding.coordinator, text, Snackbar.LENGTH_LONG).apply {
-            if (binding.fab.isShown) {
-                anchorView = binding.fab
-            }
-            // TODO
+            anchorView = binding.bottomNav
         }
     }
 
@@ -495,7 +484,7 @@ class MainActivity : ThemedActivity(),
     // may NOT called when app is in background
     // ONLY do UI update here, write DB in bg process
     override fun cbSpeedUpdate(stats: SpeedDisplayData) {
-        binding.stats.updateSpeed(stats.txRateProxy, stats.rxRateProxy)
+        binding.dock.updateSpeed(stats.txRateProxy, stats.rxRateProxy)
     }
 
     override suspend fun cbTrafficUpdate(data: TrafficDataBatch) {
@@ -548,23 +537,7 @@ class MainActivity : ThemedActivity(),
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (super.onKeyDown(keyCode, event)) return true
-                binding.drawerLayout.open()
-                navigation.requestFocus()
-            }
-
-            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                if (binding.drawerLayout.isOpen) {
-                    binding.drawerLayout.close()
-                    return true
-                }
-            }
-        }
-
         if (super.onKeyDown(keyCode, event)) return true
-        if (binding.drawerLayout.isOpen) return false
 
         val fragment =
             supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment

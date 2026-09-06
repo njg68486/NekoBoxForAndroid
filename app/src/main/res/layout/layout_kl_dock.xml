@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  kl dock 内部结构（照 HTML 原型 .dock 的两个子节点）：
+    .dock-info  116×58   ▼下行 / ▲上行 / MODE:延迟
+    .dock-power  58×58   play / pause
+  中间 1dp 分割线 #B5E8F8 = 原型 .dock.expanded .dock-power{border-left:1px solid #b5e8f8}
+  宽度由 KlDock 用动画写，这里给的是展开态目标值。
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout
+        android:id="@+id/dock_info"
+        android:layout_width="116dp"
+        android:layout_height="58dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="5dp">
+
+        <TextView
+            android:id="@+id/dock_rx"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/kl_dock_fg"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:text="▼ 1.76 MB/s" />
+
+        <TextView
+            android:id="@+id/dock_tx"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/kl_dock_fg"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:text="▲ 280 KB/s" />
+
+        <TextView
+            android:id="@+id/dock_latency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/kl_dock_fg"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="HTTP: 79ms" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/dock_divider"
+        android:layout_width="1dp"
+        android:layout_height="58dp"
+        android:background="@color/kl_dock_divider" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/dock_power"
+        android:layout_width="58dp"
+        android:layout_height="58dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/connect"
+        android:padding="15dp"
+        android:scaleType="fitCenter"
+        app:srcCompat="@drawable/ic_kl_play"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+</merge>

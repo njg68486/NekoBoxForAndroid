@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kl 底栏四按钮：配置 / 分组 / 分流 / 设置（对应原型 NAV_ITEMS 四项） -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_configuration"
+        android:icon="@drawable/ic_action_description"
+        android:title="@string/menu_configuration" />
+    <item
+        android:id="@+id/nav_group"
+        android:icon="@drawable/ic_baseline_view_list_24"
+        android:title="@string/menu_group" />
+    <item
+        android:id="@+id/nav_route"
+        android:icon="@drawable/ic_maps_directions"
+        android:title="@string/kl_nav_route" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_action_settings"
+        android:title="@string/settings" />
+</menu>

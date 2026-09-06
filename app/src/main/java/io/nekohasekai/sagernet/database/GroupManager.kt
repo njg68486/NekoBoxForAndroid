@@ -81,6 +81,8 @@ object GroupManager {
 
     suspend fun createGroup(group: ProxyGroup): ProxyGroup {
         group.userOrder = SagerDatabase.groupDao.nextOrder() ?: 1
+        // kl: 创建时间，「本地」分段按它排序、卡片显示「创建·M-d」
+        if (group.createdAt == 0L) group.createdAt = System.currentTimeMillis()
         group.id = SagerDatabase.groupDao.createGroup(group.applyDefaultValues())
         iterator { groupAdd(group) }
         if (group.type == GroupType.SUBSCRIPTION) {

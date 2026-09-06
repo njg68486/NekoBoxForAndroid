@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kl_nav_route">分流</string>
+    <string name="kl_settings_app">软件设置</string>
+    <string name="kl_dock_test">延迟测试</string>
+    <string name="kl_drag_sort">拖动排序</string>
+    <string name="kl_search_scope_group">当前分组</string>
+    <string name="kl_search_scope_all">全局搜索</string>
+    <string name="kl_search_hint">搜索代理节点</string>
+    <string name="kl_tab_default">默认</string>
+    <string name="kl_tab_sub">订阅</string>
+    <string name="kl_tab_local">本地</string>
+    <string name="kl_sort_default">默认</string>
+    <string name="kl_sort_asc">升序</string>
+    <string name="kl_sort_desc">降序</string>
+    <string name="kl_created_at">创建·%s</string>
+</resources>
