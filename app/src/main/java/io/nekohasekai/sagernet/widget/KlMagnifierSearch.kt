@@ -20,7 +20,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.ktx.dp2px
-import kotlin.math.sqrt
 
 /**
  * kl 放大镜形变搜索框 v2 —— 展开/收起时序照《搜索框形变说明.md》，内容布局按用户规格：
@@ -78,6 +77,7 @@ class KlMagnifierSearch @JvmOverloads constructor(
             magnifier,
             LayoutParams(dp2px(24), LayoutParams.MATCH_PARENT, Gravity.CENTER)
         )
+        // init 里撑满槽位后再无黑边；icon 视图自身保持 24dp 见方
 
         // [分组│全局] 切换钮：短文案、胶囊底
         scopeButton.apply {
@@ -267,6 +267,10 @@ class KlMagnifierIcon @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
 ) : android.view.View(context, attrs) {
 
+    init {
+        // 视图尺寸由宿主给（24dp 宽）；onDraw 里按 24×24 viewBox 居中绘制
+    }
+
     private var handleScale = 1f
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -288,22 +292,25 @@ class KlMagnifierIcon @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val stroke = dp2px(2).toFloat()
+        // 用户给的 SVG：viewBox 24，circle(11,11,r7) + path M16,16 L21,21，stroke 2，round cap/join
+        val u = dp2px(1).toFloat() // 1 SVG unit = 1dp（视图按 24dp 宽给）
+        canvas.save()
+        // 24×24 图形在视图内居中（视图高度可能大于 24dp）
+        canvas.translate((width - 24f * u) / 2f, (height - 24f * u) / 2f)
+        val stroke = 2f * u
         paint.strokeWidth = stroke
-        val r = (width.coerceAtMost(height)) / 2f - stroke
-        val cx = width / 2f - dp2px(2)
-        val cy = height / 2f - dp2px(2)
 
-        canvas.drawCircle(cx, cy, r, paint)
+        canvas.drawCircle(11f * u, 11f * u, 7f * u, paint)
 
         if (handleScale > 0.01f) {
-            val k = r / sqrt(2f)
             canvas.save()
-            canvas.translate(cx + k, cy + k)
+            // 手柄从圆缘 (16,16) 长出，锚点 (16,16)，45° 指向右下
+            canvas.translate(16f * u, 16f * u)
             canvas.rotate(45f)
             canvas.scale(handleScale, 1f)
-            canvas.drawLine(0f, 0f, dp2px(7).toFloat(), 0f, paint)
+            canvas.drawLine(0f, 0f, 5f * u, 0f, paint)
             canvas.restore()
         }
+        canvas.restore()
     }
 }

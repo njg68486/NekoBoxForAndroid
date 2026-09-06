@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  kl 分组卡片 v2：删除面板在 MaterialCardView 框【里面】右缘，左滑时向左揭示，
-  由卡片自身裁剪（KlSwipeRevealLayout 里给卡片开 clipChildren + clipToOutline）。
-  外层 KlSwipeRevealLayout 只负责手势与揭示量。
+  kl 分组卡片 v3 —— 按用户排版规格重做：
+
+  订阅分组（四行）：
+      名称
+      流量信息（已用 X / 剩余 Y）
+      过期时间（到期·2027-3-11）
+      N 个配置          [更新订阅] ← 按钮在第四行右边
+
+  本地分组（三行）：
+      名称
+      创建·2026-5-5
+      N 个配置
+
+  · 去掉了订阅卡「N 个配置 | 更新于 M-d」里的更新时间字样和 SIP008 用户名行
+  · 顶部仍是 ☰ 拖拽 / ✏️ 编辑 / ⋮ 更多；左滑删除面板 = 48dp 方块，位置正好盖住 ✏️
+  · 删除面板在 MaterialCardView 框内右缘，收起时被推出卡片由卡片裁剪
 -->
 <io.nekohasekai.sagernet.widget.KlSwipeRevealLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -21,7 +34,6 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="bottom"
             android:orientation="vertical">
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -32,6 +44,7 @@
                 android:visibility="gone"
                 app:indicatorColor="?colorPrimary" />
 
+            <!-- 第一行：名称 + ☰ ✏️ ⋮ -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,29 +54,19 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:gravity="center_vertical"
                     android:paddingStart="15dp"
-                    android:paddingTop="15dp"
+                    android:paddingTop="14dp"
                     android:paddingEnd="8dp"
-                    android:paddingBottom="12dp">
+                    android:paddingBottom="2dp">
 
                     <TextView
                         android:id="@+id/group_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
                         android:textAppearance="?android:attr/textAppearanceMedium"
                         android:textColor="?android:attr/textColorPrimary"
                         android:textStyle="bold"
                         tools:text="@string/group_name" />
-
-                    <TextView
-                        android:id="@+id/group_user"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:textColor="?android:attr/textColorSecondary"
-                        tools:text="user name" />
                 </LinearLayout>
 
                 <androidx.appcompat.widget.AppCompatImageView
@@ -101,73 +104,84 @@
 
             </LinearLayout>
 
+            <!-- 中段信息行：订阅 = 流量/到期；本地 = 创建时间 -->
+            <TextView
+                android:id="@+id/group_created"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:paddingTop="8dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                tools:text="创建·2026-9-6" />
+
+            <TextView
+                android:id="@+id/group_traffic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:paddingTop="8dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                tools:text="已用 70.7GB / 剩余 149GB" />
+
+            <!-- kl 新增：过期时间独立一行（SIP008 expiryDate / Raw userinfo expire=） -->
+            <TextView
+                android:id="@+id/group_expire"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:paddingTop="6dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                tools:text="到期·2027-3-11" />
+
+            <!-- 第四行：N 个配置（左） + 更新订阅（右） -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"
-                android:layout_marginBottom="4dp"
-                android:gravity="bottom">
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="15dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="10dp">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/group_status"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
                     android:layout_weight="1"
-                    android:gravity="bottom"
-                    android:orientation="vertical"
-                    android:paddingStart="12.5dp"
-                    android:paddingTop="8dp">
-
-                    <TextView
-                        android:id="@+id/group_traffic"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:textColor="?android:textColorSecondary"
-                        android:visibility="gone"
-                        tools:text="@string/subscription_traffic" />
-
-                    <TextView
-                        android:id="@+id/group_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:textColor="?android:textColorSecondary"
-                        tools:text="@string/group_status_empty" />
-
-                    <!-- kl: 创建·M-d（createdAt=0 的旧数据不显示） -->
-                    <TextView
-                        android:id="@+id/group_created"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:textColor="?android:textColorSecondary"
-                        android:visibility="gone"
-                        tools:text="创建·2026-6-6" />
-
-                </LinearLayout>
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="1 个配置" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/group_update"
                     style="?attr/borderlessButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/group_update"
+                    android:minWidth="0dp"
+                    android:text="@string/kl_update_sub"
                     android:textColor="?android:textColorSecondary" />
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- 左滑露出的删除面板：卡片框内右缘的正方形，宽度在
-             KlSwipeRevealLayout.onMeasure 里被改写成高度（正方形） -->
+        <!-- 左滑露出的删除按钮：48dp 方块，位置正好盖住 ✏️ 编辑键
+             （⋮ 占最右 48dp，面板 marginEnd=48 → 恰好落在编辑键槽位上） -->
         <LinearLayout
             android:id="@+id/kl_swipe_reveal"
-            android:layout_width="72dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="end"
-            android:layout_margin="5dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end|top"
+            android:layout_marginEnd="48dp"
             android:background="@drawable/kl_delete_reveal_bg"
             android:clickable="true"
             android:focusable="true"
@@ -178,18 +192,9 @@
             <androidx.appcompat.widget.AppCompatImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:layout_marginEnd="6dp"
                 android:contentDescription="@string/delete"
                 app:srcCompat="@drawable/ic_baseline_delete_24"
                 app:tint="@color/kl_delete_fg" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/delete"
-                android:textColor="@color/kl_delete_fg"
-                android:textSize="15sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>

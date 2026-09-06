@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewConfiguration
 import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
@@ -39,10 +40,16 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
 
     private lateinit var revealView: View
 
-    /** 揭示宽度 = 正方形边长，随卡片高度在 onMeasure 里定 */
+    /** 揭示宽度 = 面板自身宽（48dp，正好盖住编辑键） */
     private var revealWidth = 0
 
-    /** 当前露出量，0 = 收起，revealWidth = 全开。唯一真相源。 */
+    /** 收起态要把面板推出卡片右缘所需的额外距离（面板的 marginEnd = ⋮ 槽位宽 48dp） */
+    private var hiddenBase = 0
+
+    /** 总行程 = hiddenBase + revealWidth；offset ∈ [0, totalTravel] */
+    private var totalTravel = 0
+
+    /** 当前露出量，0 = 收起，totalTravel = 全开。唯一真相源。 */
     private var offset = 0f
 
     private var animator: ValueAnimator? = null
@@ -65,21 +72,19 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
             clipChildren = true
             clipToOutline = true
         }
+        // 面板 layout_marginEnd = ⋮ 键槽位宽 —— 收起时要多滑这段才完全出卡
+        hiddenBase = (revealView.layoutParams as MarginLayoutParams).marginEnd
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        // 正方形边长 = 面板自身高度（卡片内容高度，不含手写的固定值）
-        val target = revealView.measuredHeight.coerceAtMost(measuredWidth)
-        if (target > 0 && revealView.layoutParams.width != target) {
-            revealView.layoutParams = revealView.layoutParams.apply { width = target }
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        }
+        // 面板宽高用布局里声明的 48dp（编辑键槽位），不再强制正方形 = 卡片高
         revealWidth = revealView.measuredWidth
-        if (offset > revealWidth) offset = revealWidth.toFloat()
+        totalTravel = hiddenBase + revealWidth
+        if (offset > totalTravel) offset = totalTravel.toFloat()
         pendingOpened?.let {
             pendingOpened = null
-            offset = if (it) revealWidth.toFloat() else 0f
+            offset = if (it) totalTravel.toFloat() else 0f
         }
     }
 
@@ -89,8 +94,9 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
     }
 
     private fun applyOffset() {
-        // 覆盖层始终贴右边缘，靠 translationX 把自己推到卡片外，由 clipChildren 裁掉
-        revealView.translationX = (revealWidth - offset)
+        // offset=0：面板整体推出卡片右缘（translationX=totalTravel）被裁掉；
+        // offset=totalTravel：面板回到布局槽位（正好盖住编辑键）
+        revealView.translationX = (totalTravel - offset)
         revealView.visibility = if (offset <= 0f) INVISIBLE else VISIBLE
     }
 
@@ -104,14 +110,14 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
     fun setOpened(opened: Boolean, animate: Boolean) {
         animator?.cancel()
         animator = null
-        if (revealWidth == 0) {
+        if (totalTravel == 0) {
             pendingOpened = opened
             offset = 0f
             applyOffset()
             return
         }
         pendingOpened = null
-        val target = if (opened) revealWidth.toFloat() else 0f
+        val target = if (opened) totalTravel.toFloat() else 0f
         if (!animate || !isLaidOut) {
             offset = target
             applyOffset()
@@ -150,7 +156,7 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (revealWidth == 0) return false
+                if (totalTravel == 0) return false
                 val dx = ev.x - downX
                 val dy = ev.y - downY
                 // 横向意图明显才拦截，否则让 RecyclerView 继续竖滚
@@ -168,7 +174,7 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (revealWidth == 0) return super.onTouchEvent(event)
+        if (totalTravel == 0) return super.onTouchEvent(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 downX = event.x
@@ -185,7 +191,7 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
                     parent?.requestDisallowInterceptTouchEvent(true)
                 }
                 // 左滑（dx<0）增加露出量
-                offset = (offsetAtDown - (event.x - downX)).coerceIn(0f, revealWidth.toFloat())
+                offset = (offsetAtDown - (event.x - downX)).coerceIn(0f, totalTravel.toFloat())
                 applyOffset()
                 return true
             }
@@ -194,8 +200,8 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
                 if (dragging) {
                     dragging = false
                     val wasOpen = offsetAtDown > 0f
-                    val open = offset > revealWidth / 2f
-                    animateTo(if (open) revealWidth.toFloat() else 0f)
+                    val open = offset > totalTravel / 2f
+                    animateTo(if (open) totalTravel.toFloat() else 0f)
                     if (open != wasOpen) onOpenChanged?.invoke(open)
                     return true
                 }

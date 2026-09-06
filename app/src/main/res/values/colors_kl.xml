@@ -12,4 +12,8 @@
 
     <!-- 选择页迷你卡描边（选中态描边换 kl_dock） -->
     <color name="kl_pick_stroke">#3A4650</color>
+    <!-- 底栏（原型 selected/selected-border/bg-bottom 变量） -->
+    <color name="kl_nav_pill">#214A66</color>
+    <color name="kl_nav_active">#90CDFC</color>
+    <color name="kl_nav_inactive">#FFFFFF</color>
 </resources>

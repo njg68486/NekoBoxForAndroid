@@ -20,4 +20,6 @@
     <string name="kl_sort_asc">升序</string>
     <string name="kl_sort_desc">降序</string>
     <string name="kl_created_at">创建·%s</string>
+    <string name="kl_expire_at">到期·%s</string>
+    <string name="kl_update_sub">更新订阅</string>
 </resources>

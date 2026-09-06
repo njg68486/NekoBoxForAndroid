@@ -931,17 +931,8 @@ class ConfigurationFragment @JvmOverloads constructor(
                 }
             }
 
-            R.id.action_connection_tcp_ping -> {
-                // kl: 顶栏胶囊左半 —— TCPing 模式 + 立即开测（静默并发）
-                klTestModeTcp = true
-                klRunLatencyTest(true)
-            }
-
-            R.id.action_connection_url_test -> {
-                // kl: 顶栏胶囊右半 —— URL Test 模式 + 立即开测
-                klTestModeTcp = false
-                klRunLatencyTest(false)
-            }
+            // kl: TCPing / URL Test 菜单项已删 —— 顶栏延迟测试连体胶囊就是这两个功能，
+            //     ⋮ 里再放一份纯属重复（用户要求移除）。
 
             R.id.action_global_mode -> {
                 item.isChecked = !item.isChecked

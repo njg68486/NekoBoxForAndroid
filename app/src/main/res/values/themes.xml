@@ -58,6 +58,22 @@
 
     </style>
 
+    <!-- kl 底栏选中项：满宽圆角胶囊（原型 .nav-item.active 圆角22px 蓝底 #214A66 亮字 #90CDFC）。
+         M2 主题下 itemActiveIndicatorStyle 仍生效（MDC 1.8 合并了 M3 bar），但其中的
+         ?attr/colorSecondaryContainer 在 M2 主题解析不到，所以这里直接写死颜色。 -->
+    <style name="Widget.Kl.BottomNav.ActiveIndicator" parent="">
+        <item name="android:width">@dimen/kl_nav_pill_width</item>
+        <item name="android:height">@dimen/kl_nav_pill_height</item>
+        <item name="android:color">@color/kl_nav_pill</item>
+        <item name="marginHorizontal">6dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearanceOverlay.Kl.NavPill</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.Kl.NavPill" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
     <style name="Theme.SagerNet.Dialog" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
         <item name="actionBarStyle">@style/Widget.MaterialComponents.ActionBar.Solid</item>
         <item name="actionModeCloseDrawable">@drawable/ic_navigation_close</item>

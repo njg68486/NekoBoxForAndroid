@@ -25,4 +25,6 @@
     <string name="kl_sort_asc">Ascending</string>
     <string name="kl_sort_desc">Descending</string>
     <string name="kl_created_at">Created %s</string>
+    <string name="kl_expire_at">Expires %s</string>
+    <string name="kl_update_sub">Update</string>
 </resources>

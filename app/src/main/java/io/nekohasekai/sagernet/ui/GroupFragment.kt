@@ -32,7 +32,6 @@ import io.nekohasekai.sagernet.widget.ListListener
 import io.nekohasekai.sagernet.widget.QRCodeDialog
 import io.nekohasekai.sagernet.widget.UndoSnackbarManager
 import kotlinx.coroutines.delay
-import moe.matsuri.nb4a.utils.Util
 import moe.matsuri.nb4a.utils.toBytesString
 import java.lang.NumberFormatException
 import java.text.SimpleDateFormat
@@ -486,7 +485,7 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
         val groupName = binding.groupName
         val groupStatus = binding.groupStatus
         val groupTraffic = binding.groupTraffic
-        val groupUser = binding.groupUser
+        val groupExpire = binding.groupExpire
         val editButton = binding.edit
         val optionsButton = binding.options
         val updateButton = binding.groupUpdate
@@ -586,10 +585,10 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
             updateButton.isInvisible = proxyGroup.type != GroupType.SUBSCRIPTION
             groupName.text = proxyGroup.displayName()
 
-            // kl: 「创建·M-d」；旧数据 createdAt=0 不显示，避免满屏 1970-1-1
-            if (proxyGroup.createdAt > 0L) {
+            // kl 排版：本地卡第二行「创建·M-d」；订阅卡这两行让位给 流量/到期
+            if (proxyGroup.type != GroupType.SUBSCRIPTION && proxyGroup.createdAt > 0L) {
                 groupCreated.isVisible = true
-                val fmt = SimpleDateFormat("M-d", Locale.getDefault())
+                val fmt = SimpleDateFormat("yyyy-M-d", Locale.getDefault())
                 groupCreated.text = getString(R.string.kl_created_at, fmt.format(Date(proxyGroup.createdAt)))
             } else {
                 groupCreated.isVisible = false
@@ -619,10 +618,6 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
             }
 
             if (proxyGroup.id in GroupUpdater.updating) {
-                (groupName.parent as LinearLayout).apply {
-                    setPadding(paddingLeft, dp2px(11), paddingRight, paddingBottom)
-                }
-
                 subscriptionUpdateProgress.isVisible = true
 
                 if (!GroupUpdater.progress.containsKey(proxyGroup.id)) {
@@ -639,87 +634,82 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
                 editButton.isGone = true
                 dragHandle.isGone = true
             } else {
-                (groupName.parent as LinearLayout).apply {
-                    setPadding(paddingLeft, dp2px(15), paddingRight, paddingBottom)
-                }
-
                 subscriptionUpdateProgress.isVisible = false
                 updateButton.isInvisible = proxyGroup.type != GroupType.SUBSCRIPTION
                 editButton.isGone = proxyGroup.ungrouped
                 dragHandle.isGone = proxyGroup.ungrouped
             }
 
+            // kl 排版 v3：订阅卡 = 流量信息一行 + 到期一行；本地卡两者都隐藏
             val subscription = proxyGroup.subscription
-            if (subscription != null && subscription.bytesUsed > 0L) { // SIP008 & Open Online Config
-                groupTraffic.isVisible = true
-                groupTraffic.text = if (subscription.bytesRemaining > 0L) {
-                    app.getString(
-                        R.string.subscription_traffic, Formatter.formatFileSize(
-                            app, subscription.bytesUsed
-                        ), Formatter.formatFileSize(
-                            app, subscription.bytesRemaining
-                        )
-                    )
-                } else {
-                    app.getString(
-                        R.string.subscription_used, Formatter.formatFileSize(
-                            app, subscription.bytesUsed
-                        )
-                    )
-                }
-                groupStatus.setPadding(0)
-            } else if (subscription != null && !subscription.subscriptionUserinfo.isNullOrBlank()) { // Raw
-                var text = ""
+            groupTraffic.isVisible = false
+            groupExpire.isVisible = false
+            if (subscription != null) {
+                val dateFmt = SimpleDateFormat("yyyy-M-d", Locale.getDefault())
 
-                fun get(regex: String): String? {
-                    return regex.toRegex().findAll(subscription.subscriptionUserinfo).mapNotNull {
-                        if (it.groupValues.size > 1) it.groupValues[1] else null
-                    }.firstOrNull()
-                }
-
-                try {
-                    var used: Long = 0
-                    get("upload=([0-9]+)")?.apply {
-                        used += toLong()
-                    }
-                    get("download=([0-9]+)")?.apply {
-                        used += toLong()
-                    }
-                    val total = get("total=([0-9]+)")?.toLong() ?: 0
-                    val remain = total - used
-                    if (used > 0 || total > 0) {
-                        text += if (remain > 0) {
-                            getString(
-                                R.string.subscription_traffic,
-                                used.toBytesString(),
-                                remain.toBytesString()
+                // 第二行：流量（SIP008 数值字段优先，其次 Raw 订阅头的 upload/download/total）
+                var traffic: String? = null
+                if (subscription.bytesUsed > 0L) {
+                    traffic = if (subscription.bytesRemaining > 0L) {
+                        app.getString(
+                            R.string.subscription_traffic, Formatter.formatFileSize(
+                                app, subscription.bytesUsed
+                            ), Formatter.formatFileSize(
+                                app, subscription.bytesRemaining
                             )
-                        } else {
-                            getString(R.string.subscription_used, used.toBytesString())
-                        }
-                    }
-                    get("expire=([0-9]+)")?.apply {
-                        text += "\n"
-                        text += getString(
-                            R.string.subscription_expire,
-                            Util.timeStamp2Text(this.toLong() * 1000)
+                        )
+                    } else {
+                        app.getString(
+                            R.string.subscription_used, Formatter.formatFileSize(
+                                app, subscription.bytesUsed
+                            )
                         )
                     }
-                } catch (_: NumberFormatException) {
-                    // ignore
+                } else if (!subscription.subscriptionUserinfo.isNullOrBlank()) {
+                    fun pick(regex: String): String? =
+                        regex.toRegex().findAll(subscription.subscriptionUserinfo)
+                            .mapNotNull { m -> if (m.groupValues.size > 1) m.groupValues[1] else null }
+                            .firstOrNull()
+                    try {
+                        var used = 0L
+                        pick("upload=([0-9]+)")?.let { used += it.toLong() }
+                        pick("download=([0-9]+)")?.let { used += it.toLong() }
+                        val total = pick("total=([0-9]+)")?.toLong() ?: 0L
+                        val remain = total - used
+                        if (used > 0 || total > 0) {
+                            traffic = if (remain > 0) {
+                                getString(
+                                    R.string.subscription_traffic,
+                                    used.toBytesString(),
+                                    remain.toBytesString()
+                                )
+                            } else {
+                                getString(R.string.subscription_used, used.toBytesString())
+                            }
+                        }
+                    } catch (_: NumberFormatException) {
+                        // ignore
+                    }
                 }
-
-                if (text.isNotEmpty()) {
+                traffic?.let {
                     groupTraffic.isVisible = true
-                    groupTraffic.text = text
-                    groupStatus.setPadding(0)
+                    groupTraffic.text = it
                 }
-            } else {
-                groupTraffic.isVisible = false
-                groupStatus.setPadding(0, 0, 0, dp2px(4))
-            }
 
-            groupUser.text = subscription?.username ?: ""
+                // 第三行：过期时间（SIP008 expiryDate 秒 / Raw userinfo expire= 秒）
+                val expireSec: Long? = subscription.expiryDate?.takeIf { it > 0 }?.toLong()
+                    ?: subscription.subscriptionUserinfo?.let {
+                        "expire=([0-9]+)".toRegex().findAll(it)
+                            .mapNotNull { m -> if (m.groupValues.size > 1) m.groupValues[1] else null }
+                            .firstOrNull()?.toLongOrNull()
+                    }
+                if (expireSec != null && expireSec > 0L) {
+                    groupExpire.isVisible = true
+                    groupExpire.text = getString(
+                        R.string.kl_expire_at, dateFmt.format(Date(expireSec * 1000L))
+                    )
+                }
+            }
 
             runOnDefaultDispatcher {
                 val size = SagerDatabase.proxyDao.countByGroup(group.id)
@@ -734,17 +724,12 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
                         }
 
                         GroupType.SUBSCRIPTION -> {
+                            // kl: 不再带「更新于 M-d」，只显示配置数
                             groupStatus.text = if (size == 0L) {
                                 getString(R.string.group_status_empty_subscription)
                             } else {
-                                val date = Date(group.subscription!!.lastUpdated * 1000L)
-                                getString(
-                                    R.string.group_status_proxies_subscription,
-                                    size,
-                                    "${date.month + 1} - ${date.date}"
-                                )
+                                getString(R.string.group_status_proxies, size)
                             }
-
                         }
                     }
                 }

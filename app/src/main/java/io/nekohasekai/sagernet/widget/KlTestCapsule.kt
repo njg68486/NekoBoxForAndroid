@@ -93,7 +93,6 @@ class KlTestCapsule @JvmOverloads constructor(
                 bottomMargin = dp2px(7)
             }
         )
-
         testIcon = ImageView(context).apply {
             setImageResource(R.drawable.ic_baseline_speed_24)
             setColorFilter(FG)
@@ -129,6 +128,19 @@ class KlTestCapsule @JvmOverloads constructor(
             onModeToggle?.invoke(tcpMode)
         }
         testButton.setOnClickListener { if (!testing) onTest?.invoke() }
+    }
+
+    /**
+     * 菜单 action view 会被 ActionMenuView 以 MATCH_PARENT 高度塞进工具栏 —— 之前整个
+     * 胶囊被撑到工具栏满高（≈42dp，用户反馈「太高」）。这里无视外部高度约束，
+     * 强制 34dp（与分组页分段控件同高，视觉齐平）。
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val h = dp2px(34)
+        super.onMeasure(
+            widthMeasureSpec,
+            MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY)
+        )
     }
 
     fun setMode(tcp: Boolean) {

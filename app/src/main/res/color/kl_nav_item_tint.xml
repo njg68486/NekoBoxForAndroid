@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底栏选中/未选中色：原型 active = selected-border #90CDFC，未选中白 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/kl_nav_active" android:state_checked="true" />
+    <item android:color="@color/kl_nav_inactive" />
+</selector>
