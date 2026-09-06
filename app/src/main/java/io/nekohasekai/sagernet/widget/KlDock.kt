@@ -156,28 +156,33 @@ class KlDock @JvmOverloads constructor(
     private fun setLatencyIdle() {
         latencyText.text = context.getText(R.string.not_connected)
     }
+}
 
-    /**
-     * 竖向虚线分割线：同顶栏延迟胶囊的 .cap-divider（3dp 实 3dp 空，#B5E8F8）。
-     * 上一版是 1dp 实色 View，用户要求换成胶囊同款虚线。
-     */
-    class DashedDivider @JvmOverloads constructor(
-        context: Context, attrs: AttributeSet? = null,
-    ) : View(context, attrs) {
+/**
+ * 竖向虚线分割线：同顶栏延迟胶囊的 .cap-divider（3dp 实 3dp 空，#B5E8F8）。
+ * 上一版是 1dp 实色 View，用户要求换成胶囊同款虚线。
+ *
+ * 注意：必须是顶层类 —— XML 里引用自定义 View 用的是 `包名.类名` 的点号路径，
+ * Kotlin 嵌套类编译后真实类名是 `KlDock$DashedDivider`（$ 分隔），LayoutInflater
+ * 按点号找不到类，直接 ClassNotFoundException 把整个 layout_main 炸掉
+ * （round4 实机闪退的根因）。AAPT 编译期不校验类名，这种错只有运行时才炸。
+ */
+class KlDockDivider @JvmOverloads constructor(
+    context: Context, attrs: AttributeSet? = null,
+) : View(context, attrs) {
 
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = context.getColor(R.color.kl_dock_divider)
-            strokeWidth = dp2px(1).toFloat()
-            style = Paint.Style.STROKE
-            pathEffect = DashPathEffect(
-                floatArrayOf(dp2px(3).toFloat(), dp2px(3).toFloat()), 0f
-            )
-        }
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = context.getColor(R.color.kl_dock_divider)
+        strokeWidth = dp2px(1).toFloat()
+        style = Paint.Style.STROKE
+        pathEffect = DashPathEffect(
+            floatArrayOf(dp2px(3).toFloat(), dp2px(3).toFloat()), 0f
+        )
+    }
 
-        override fun onDraw(canvas: Canvas) {
-            super.onDraw(canvas)
-            val cx = width / 2f
-            canvas.drawLine(cx, dp2px(9).toFloat(), cx, (height - dp2px(9)).toFloat(), paint)
-        }
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val cx = width / 2f
+        canvas.drawLine(cx, dp2px(9).toFloat(), cx, (height - dp2px(9)).toFloat(), paint)
     }
 }

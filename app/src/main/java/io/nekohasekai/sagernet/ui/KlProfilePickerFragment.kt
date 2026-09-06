@@ -87,8 +87,10 @@ class KlProfilePickerFragment : ToolbarFragment(R.layout.layout_kl_pick) {
                 return@runOnDefaultDispatcher
             }
             groups = list
-            picker.layoutManager = LinearLayoutManager(requireContext())
+            // 注意：layoutManager/adapter 赋值会触发 requestLayout，必须在主线程 ——
+            // 之前直接写在 worker 里，实机 CalledFromWrongThreadException 闪退
             runOnMainDispatcher {
+                picker.layoutManager = LinearLayoutManager(requireContext())
                 if (picker.adapter !is GroupPickAdapter) {
                     picker.adapter = GroupPickAdapter()
                 }
