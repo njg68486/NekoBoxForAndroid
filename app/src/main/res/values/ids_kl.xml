@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- kl: 运行时 menu.add 用的菜单项 id（顶栏测试胶囊） -->
+    <item name="action_kl_test_capsule" type="id" />
+</resources>

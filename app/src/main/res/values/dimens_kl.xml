@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- kl 尺寸：底栏 70px、dock 贴底栏上方（原型 .bottom-nav height:70px / .dock-host bottom:84px） -->
-<resources>
-    <dimen name="kl_bottom_nav_height">70dp</dimen>
-    <dimen name="kl_dock_margin_bottom">78dp</dimen>
-</resources>

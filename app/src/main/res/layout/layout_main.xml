@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  kl 主布局：
-  · 删掉上游 DrawerLayout + 两套 NavigationView（☰ 侧边抽屉整个下线）
-  · 删掉 ServiceButton(FAB) + fabProgress + StatsBar(BottomAppBar)
-  · 换成 HTML 原型的 dock（右下角圆角方块，运行时向左展开出速率/延迟）
-  · 底部四按钮：配置 / 分组 / 分流 / 设置
+  kl 主布局 v2：
+  · 底栏四按钮 配置/分组/分流/设置。wrap_content 让 BottomNavigationView 自己处理
+    手势条 inset —— 上一版固定 70dp，inset 会被挤进内容区，四个按钮显示不全。
+  · dock 锚定在底栏上缘（layout_anchor），不再用固定 marginBottom —— 上一版 78dp
+    在有手势条的手机上会被 nav 顶上来，右下角盖住第四个按钮。
+  · fragment_holder 的 bottomMargin 在 MainActivity 里跟着 nav 实际高度同步。
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -16,25 +17,25 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/fragment_holder"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="@dimen/kl_bottom_nav_height" />
+        android:layout_height="match_parent" />
 
-    <!-- 原型 .dock-row：右对齐、贴住底栏上方，padding-right 与卡片右边缘对齐 -->
     <io.nekohasekai.sagernet.widget.KlDock
         android:id="@+id/dock"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="@dimen/kl_dock_margin_bottom" />
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp"
+        app:layout_anchor="@id/bottom_nav"
+        app:layout_anchorGravity="top|end" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/kl_bottom_nav_height"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="?attr/colorPrimary"
         app:elevation="0dp"
+        app:itemRippleColor="@android:color/transparent"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/kl_bottom_nav_menu" />
 

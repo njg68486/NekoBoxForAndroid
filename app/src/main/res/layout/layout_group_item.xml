@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  kl 分组卡片：外层套 KlSwipeRevealLayout。
-  · 第一个子节点 = 原上游卡片内容（一行没改语义）
-  · 第二个子节点 kl_swipe_reveal = 左滑露出的正方形删除面板，
-    贴右边缘、盖住 edit / options 两个键。
+  kl 分组卡片 v2：删除面板在 MaterialCardView 框【里面】右缘，左滑时向左揭示，
+  由卡片自身裁剪（KlSwipeRevealLayout 里给卡片开 clipChildren + clipToOutline）。
+  外层 KlSwipeRevealLayout 只负责手势与揭示量。
 -->
 <io.nekohasekai.sagernet.widget.KlSwipeRevealLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -161,37 +160,38 @@
 
         </LinearLayout>
 
+        <!-- 左滑露出的删除面板：卡片框内右缘的正方形，宽度在
+             KlSwipeRevealLayout.onMeasure 里被改写成高度（正方形） -->
+        <LinearLayout
+            android:id="@+id/kl_swipe_reveal"
+            android:layout_width="72dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:layout_margin="5dp"
+            android:background="@drawable/kl_delete_reveal_bg"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="invisible">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginEnd="6dp"
+                android:contentDescription="@string/delete"
+                app:srcCompat="@drawable/ic_baseline_delete_24"
+                app:tint="@color/kl_delete_fg" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/delete"
+                android:textColor="@color/kl_delete_fg"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
     </com.google.android.material.card.MaterialCardView>
-
-    <!-- 左滑露出的删除面板：宽度在 KlSwipeRevealLayout.onMeasure 里被改成正方形边长 -->
-    <LinearLayout
-        android:id="@+id/kl_swipe_reveal"
-        android:layout_width="72dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="end"
-        android:layout_margin="4dp"
-        android:background="@drawable/kl_delete_reveal_bg"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:visibility="invisible">
-
-        <androidx.appcompat.widget.AppCompatImageView
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:layout_marginEnd="6dp"
-            android:contentDescription="@string/delete"
-            app:srcCompat="@drawable/ic_baseline_delete_24"
-            app:tint="@color/kl_delete_fg" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/delete"
-            android:textColor="@color/kl_delete_fg"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-    </LinearLayout>
 
 </io.nekohasekai.sagernet.widget.KlSwipeRevealLayout>

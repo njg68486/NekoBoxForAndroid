@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceDataStore
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.view.isVisible
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.snackbar.Snackbar
 import io.nekohasekai.sagernet.BuildConfig
@@ -108,6 +109,24 @@ class MainActivity : ThemedActivity(),
         }
 
         setContentView(binding.root)
+
+        // kl: fragment_holder 底部留白 = 底栏实际高度（wrap_content 的 nav 会随手势条
+        // inset 变高，写死 margin 会出现内容压按钮或按钮压内容）
+        binding.bottomNav.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val lp = binding.fragmentHolder.layoutParams as? CoordinatorLayout.LayoutParams
+            if (lp != null && lp.bottomMargin != binding.bottomNav.height) {
+                lp.bottomMargin = binding.bottomNav.height
+                binding.fragmentHolder.layoutParams = lp
+            }
+        }
+        binding.bottomNav.post {
+            val lp = binding.fragmentHolder.layoutParams as? CoordinatorLayout.LayoutParams
+            if (lp != null && lp.bottomMargin != binding.bottomNav.height && binding.bottomNav.height > 0) {
+                lp.bottomMargin = binding.bottomNav.height
+                binding.fragmentHolder.layoutParams = lp
+            }
+        }
+
         currentMainFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment
                 ?: currentMainFragment

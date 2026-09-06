@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  kl 分组页顶栏工具件：inflate 进 toolbar（标题右侧、菜单左侧）。
+  排布 = 分组(标题) [默认|订阅|本地] (排序) …… (右上原版两个按钮)。
+  比独立一行版本缩短：minWidth 48dp / 高 34dp / 12sp。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/kl_segment_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+
+        <Button
+            android:id="@+id/kl_tab_default"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="@string/kl_tab_default"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/kl_tab_sub"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="@string/kl_tab_sub"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/kl_tab_local"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="@string/kl_tab_local"
+            android:textSize="12sp" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/kl_sort_button"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="6dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/kl_sort_asc"
+        android:scaleType="centerInside"
+        app:srcCompat="@drawable/ic_baseline_filter_list_24" />
+
+</LinearLayout>

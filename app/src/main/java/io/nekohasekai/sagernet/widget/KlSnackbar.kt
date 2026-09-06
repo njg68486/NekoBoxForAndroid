@@ -1,24 +1,19 @@
 package io.nekohasekai.sagernet.widget
 
 import android.text.TextUtils
-import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.google.android.material.snackbar.Snackbar
-import io.nekohasekai.sagernet.ktx.dp2px
 
 /**
- * kl 版 Snackbar 排版：条子只占屏幕左半边，右半边让给 dock。
+ * kl 版 Snackbar 排版：只把宽度压到左半屏（50%），其余（位置、边距、锚点）
+ * 与上游 NekoBox 完全一致 —— 条子仍由 snackbarInternal 锚在底栏上方。
  *
- * 为什么在 onShown 里改而不是 show() 之前：Snackbar 只有在 show() 时才把自己的 view
- * attach 到 parent 并生成 LayoutParams，提前读 view.layoutParams 拿到的是 null；
- * 且 SnackbarManager 每次显示都会重新走一遍布局，所以宽度必须每次 onShown 重写。
- *
- * 宽度砍到一半后，Material 的 SnackbarContentLayout 会按「文本 + action 能否放进一行」
- * 决定单行/多行布局，「还原」很容易被推到第二行 —— 所以同时把 snackbar_text 压成单行省略。
+ * 宽度必须在 onShown 里改：Snackbar 在 show() 时才 attach 到 parent 并生成
+ * LayoutParams，提前读是 null；且每次显示都会重走布局，所以每次都要重写。
+ * 宽度砍半后 Material 会把 action（还原）挤到第二行，故同时把文本压成单行。
  */
 object KlSnackbar {
 
@@ -36,43 +31,26 @@ object KlSnackbar {
         val view = snackbar.view
         val parent = view.parent as? ViewGroup ?: return
         val available = parent.width.takeIf { it > 0 } ?: return
-        val target = (available * WIDTH_FRACTION).toInt()
-        val side = dp2px(8)
 
         when (val lp = view.layoutParams) {
             is CoordinatorLayout.LayoutParams -> {
-                lp.width = target
-                lp.gravity = Gravity.BOTTOM or Gravity.START
-                lp.leftMargin = side
-                lp.rightMargin = 0
-                view.layoutParams = lp
-            }
-
-            is FrameLayout.LayoutParams -> {
-                lp.width = target
-                lp.gravity = Gravity.BOTTOM or Gravity.START
-                lp.leftMargin = side
-                lp.rightMargin = 0
+                lp.width = (available * WIDTH_FRACTION).toInt()
                 view.layoutParams = lp
             }
 
             else -> {
                 val other = view.layoutParams ?: return
-                other.width = target
+                other.width = (available * WIDTH_FRACTION).toInt()
                 view.layoutParams = other
             }
         }
 
-        // 单行化。注意 snackbar.view 的直接子节点是 SnackbarContentLayout，
-        // 文本和按钮在它里面，所以要用 findViewById 而不是遍历直接子节点。
         view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)?.apply {
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
         }
         view.findViewById<Button>(com.google.android.material.R.id.snackbar_action)?.apply {
             maxLines = 1
-            minWidth = 0
-            minimumWidth = 0
         }
     }
 }

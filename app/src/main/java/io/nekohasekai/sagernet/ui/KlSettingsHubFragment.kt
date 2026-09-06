@@ -3,9 +3,7 @@ package io.nekohasekai.sagernet.ui
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -19,20 +17,18 @@ import io.nekohasekai.sagernet.widget.ListListener
  * kl 设置页：五个入口
  *   软件设置（原 SettingsFragment）/ 日志 / 工具 / 文档 / 关于
  *
- * 纯代码行，不用 PreferenceScreen：只有五个固定行、每行是「跳一个页面」而不是偏好项。
- * 五项都不在底栏菜单里，displayFragmentWithId 会把底栏高亮钉回「设置」。
+ * 必须带 layout（含 appbar）——ToolbarFragment 里 toolbar 是 lateinit，
+ * 布局里没有 R.id.toolbar 时点进本页必崩。
  */
-class KlSettingsHubFragment : ToolbarFragment() {
+class KlSettingsHubFragment : ToolbarFragment(R.layout.layout_kl_settings_hub) {
 
-    private data class Entry(
-        val titleRes: Int,
-        val iconRes: Int,
-        val action: () -> Unit,
-    )
+    private class Entry(val titleRes: Int, val iconRes: Int, val action: () -> Unit)
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
-    ): View {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        ViewCompat.setOnApplyWindowInsetsListener(view, ListListener)
+        toolbar.setTitle(R.string.settings)
+
         val activity = requireActivity() as MainActivity
         val entries = listOf(
             Entry(R.string.kl_settings_app, R.drawable.ic_action_settings) {
@@ -52,27 +48,11 @@ class KlSettingsHubFragment : ToolbarFragment() {
             },
         )
 
-        val pad = dp2px(16)
-        return LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            setPadding(pad, pad, pad, pad)
-
-            entries.forEach { entry ->
-                addView(entryRow(entry))
-            }
-        }
+        val rows = view.findViewById<LinearLayout>(R.id.kl_settings_rows)
+        entries.forEach { rows.addView(entryRow(it)) }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        ViewCompat.setOnApplyWindowInsetsListener(view, ListListener)
-        toolbar.setTitle(R.string.settings)
-    }
-
-    /** 一行：图标 + 标题，整体可点，涟漪用主题默认 */
+    /** 一行：图标 + 标题，整体可点 */
     @SuppressLint("UseCompatLoadingForDrawables")
     private fun entryRow(entry: Entry): View {
         val context = requireContext()
@@ -80,9 +60,8 @@ class KlSettingsHubFragment : ToolbarFragment() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp2px(14), dp2px(16), dp2px(14), dp2px(16))
-            background = context.obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).let {
-                val d = it.getDrawable(0); it.recycle(); d
-            }
+            background = context.obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground))
+                .let { val d = it.getDrawable(0); it.recycle(); d }
             isClickable = true
             isFocusable = true
 

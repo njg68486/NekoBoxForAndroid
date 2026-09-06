@@ -60,12 +60,17 @@ class KlSwipeRevealLayout @JvmOverloads constructor(
         super.onFinishInflate()
         revealView = findViewById(R.id.kl_swipe_reveal)
         clipChildren = true
+        // 面板在卡片里面：让卡片裁剪它，收起时被推到卡片右缘外即被裁掉
+        (revealView.parent as? View)?.apply {
+            clipChildren = true
+            clipToOutline = true
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        // 正方形：边长取卡片高度，但不超过卡片宽度
-        val target = measuredHeight.coerceAtMost(measuredWidth)
+        // 正方形边长 = 面板自身高度（卡片内容高度，不含手写的固定值）
+        val target = revealView.measuredHeight.coerceAtMost(measuredWidth)
         if (target > 0 && revealView.layoutParams.width != target) {
             revealView.layoutParams = revealView.layoutParams.apply { width = target }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec)

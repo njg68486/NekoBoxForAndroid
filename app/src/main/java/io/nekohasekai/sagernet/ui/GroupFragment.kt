@@ -3,6 +3,7 @@ package io.nekohasekai.sagernet.ui
 import android.content.Intent
 import android.os.Bundle
 import android.text.format.Formatter
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -23,7 +24,6 @@ import io.nekohasekai.sagernet.GroupType
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.*
-import io.nekohasekai.sagernet.databinding.LayoutGroupBinding
 import io.nekohasekai.sagernet.databinding.LayoutGroupItemBinding
 import io.nekohasekai.sagernet.fmt.toUniversalLink
 import io.nekohasekai.sagernet.group.GroupUpdater
@@ -55,7 +55,10 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
     lateinit var layoutManager: LinearLayoutManager
     lateinit var groupAdapter: GroupAdapter
     lateinit var undoManager: UndoSnackbarManager<ProxyGroup>
-    private lateinit var binding: LayoutGroupBinding
+
+    /** 顶栏里的分段控件 + 排序键（inflate 自 kl_group_segment.xml） */
+    private lateinit var segmentGroup: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var sortButtonView: androidx.appcompat.widget.AppCompatImageButton
 
     /** 排序弹出小列表（圆角） */
     private var sortPopup: PopupWindow? = null
@@ -66,11 +69,39 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
         super.onViewCreated(view, savedInstanceState)
         activity = requireActivity() as MainActivity
 
-        binding = LayoutGroupBinding.bind(view)
         ViewCompat.setOnApplyWindowInsetsListener(view, ListListener)
         toolbar.setTitle(R.string.menu_group)
         toolbar.inflateMenu(R.menu.add_group_menu)
         toolbar.setOnMenuItemClickListener(this)
+
+        // kl: 顶栏 = 分组(标题·点击定位) [默认|订阅|本地] (排序) …… (原版两个按钮)
+        val tools = layoutInflater.inflate(R.layout.kl_group_segment, toolbar, false)
+        toolbar.addView(
+            tools,
+            androidx.appcompat.widget.Toolbar.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp2px(10)
+            }
+        )
+        segmentGroup = tools.findViewById(R.id.kl_segment_group)
+        sortButtonView = tools.findViewById(R.id.kl_sort_button)
+        segmentGroup.check(R.id.kl_tab_default)
+        segmentGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            currentTab = when (checkedId) {
+                R.id.kl_tab_sub -> KlTab.SUB
+                R.id.kl_tab_local -> KlTab.LOCAL
+                else -> KlTab.DEFAULT
+            }
+            groupAdapter.reloadNow()
+        }
+        sortButtonView.setOnClickListener { anchor -> showSortMenu(anchor) }
+
+        // kl: 左上角「分组」标题 = 定位键（与配置页 neko 标题同语义）：
+        // 点击滚到当前选定分组卡并置顶；若被筛选藏起来，先重置筛选再定位
+        toolbar.setOnClickListener { locateSelectedGroup() }
 
         groupListView = view.findViewById(R.id.group_list)
         layoutManager = FixedLinearLayoutManager(groupListView)
@@ -82,24 +113,26 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
         undoManager = UndoSnackbarManager(activity, groupAdapter)
 
         touchHelper.attachToRecyclerView(groupListView)
+    }
 
-        // kl: [默认|订阅|本地] 连体分段 + 排序键。
-        // include 进来的子树 id 不进 LayoutGroupBinding，直接 findViewById。
-        val segmentGroup = view.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.kl_segment_group)
-        sortButtonView = view.findViewById(R.id.kl_sort_button)
-        segmentGroup.check(R.id.kl_tab_default)
-        segmentGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            currentTab = when (checkedId) {
-                R.id.kl_tab_sub -> KlTab.SUB
-                R.id.kl_tab_local -> KlTab.LOCAL
-                else -> KlTab.DEFAULT
-            }
+    /** 定位当前选定分组：滚到它并置顶 */
+    private fun locateSelectedGroup() {
+        val targetId = DataStore.currentGroupId()
+
+        var index = groupAdapter.groupList.indexOfFirst { it.id == targetId }
+        if (index == -1) {
+            // 被筛选/排序视图藏掉了：重置回默认视图
+            currentTab = KlTab.DEFAULT
+            currentSort = KlSort.DEFAULT
+            if (::segmentGroup.isInitialized) segmentGroup.check(R.id.kl_tab_default)
             groupAdapter.reloadNow()
+            groupListView.post {
+                val i = groupAdapter.groupList.indexOfFirst { it.id == targetId }
+                if (i >= 0) layoutManager.scrollToPositionWithOffset(i, 0)
+            }
+            return
         }
-        sortButtonView.setOnClickListener { anchor ->
-            showSortMenu(anchor)
-        }
+        layoutManager.scrollToPositionWithOffset(index, 0)
     }
 
     /** 圆角小列表：默认 / 升序 / 降序 */
@@ -140,8 +173,6 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
         popup.isOutsideTouchable = true
         popup.showAsDropDown(anchor, 0, -dp2px(6))
     }
-
-    private lateinit var sortButtonView: androidx.appcompat.widget.AppCompatImageButton
 
     /** 排序键亮起与否与当前模式联动 */
     private fun syncSortButton() {

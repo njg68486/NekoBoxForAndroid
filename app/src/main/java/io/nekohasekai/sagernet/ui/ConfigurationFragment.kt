@@ -103,6 +103,8 @@ import io.nekohasekai.sagernet.ui.profile.TrojanSettingsActivity
 import io.nekohasekai.sagernet.ui.profile.TuicSettingsActivity
 import io.nekohasekai.sagernet.ui.profile.VMessSettingsActivity
 import io.nekohasekai.sagernet.ui.profile.WireGuardSettingsActivity
+import io.nekohasekai.sagernet.widget.KlMagnifierSearch
+import io.nekohasekai.sagernet.widget.KlTestCapsule
 import io.nekohasekai.sagernet.widget.QRCodeDialog
 import io.nekohasekai.sagernet.widget.UndoSnackbarManager
 import kotlinx.coroutines.CancellationException
@@ -311,6 +313,99 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     override fun onQueryTextSubmit(query: String): Boolean = false
 
+    // ==================== kl: 放大镜形变搜索（全局/分组切换） ====================
+
+    private var klSearch: KlMagnifierSearch? = null
+    private var klOriginalTitle: CharSequence? = null
+
+    /** true = 全局（所有分组页同时过滤）；false + groupId = 只搜某个分组 */
+    private var klSearchScopeAll = false
+    private var klSearchScopeGroupId: Long? = null
+
+    private fun setupKlSearch() {
+        // 原生 SearchView 撤下，换放大镜形变控件（挂在标题右侧、菜单左侧）
+        toolbar.menu.removeItem(R.id.action_search)
+        klOriginalTitle = toolbar.title
+
+        val search = KlMagnifierSearch(requireContext()).apply {
+            onQueryChange = { q -> applyKlSearch(q) }
+            onChromeToggle = { open -> setToolbarChromeVisible(!open) }
+            onScopeClick = { anchor -> showKlSearchScopeMenu(anchor) }
+        }
+        klSearch = search
+        toolbar.addView(
+            search,
+            Toolbar.LayoutParams(dp2px(28), dp2px(42)).apply {
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                marginStart = dp2px(8)
+            }
+        )
+    }
+
+    /** 搜索态替换顶栏：藏标题和全部菜单图标；收回时复原 */
+    private fun setToolbarChromeVisible(visible: Boolean) {
+        toolbar.title = if (visible) (klOriginalTitle ?: "") else ""
+        for (i in 0 until toolbar.menu.size()) {
+            toolbar.menu.getItem(i).isVisible = visible
+        }
+        if (visible) updateKlScopeChip()
+    }
+
+    private fun applyKlSearch(query: String) {
+        if (klSearchScopeAll) {
+            adapter.groupFragments.values.forEach { it.adapter?.filter(query) }
+        } else {
+            // 指定了分组：先把 pager 切过去，再过滤
+            klSearchScopeGroupId?.let { gid ->
+                val index = adapter.groupList.indexOfFirst { it.id == gid }
+                if (index >= 0) groupPager.setCurrentItem(index, false)
+            }
+            getCurrentGroupFragment()?.adapter?.filter(query)
+        }
+    }
+
+    /** 分组徽章弹菜单：全局搜索 + 各分组（带当前项勾选态） */
+    private fun showKlSearchScopeMenu(anchor: View) {
+        val popup = PopupMenu(requireContext(), anchor)
+        popup.menu.add(0, 0, 0, getString(R.string.kl_search_scope_all)).apply {
+            isCheckable = true
+            isChecked = klSearchScopeAll
+        }
+        val groups = adapter.groupList
+        groups.forEachIndexed { i, g ->
+            popup.menu.add(0, i + 1, i + 1, g.displayName()).apply {
+                isCheckable = true
+                isChecked = !klSearchScopeAll && (klSearchScopeGroupId == null && DataStore.selectedGroup == g.id || klSearchScopeGroupId == g.id)
+            }
+        }
+        popup.setOnMenuItemClickListener { item ->
+            if (item.itemId == 0) {
+                klSearchScopeAll = true
+                klSearchScopeGroupId = null
+            } else {
+                klSearchScopeAll = false
+                klSearchScopeGroupId = groups.getOrNull(item.itemId - 1)?.id
+            }
+            updateKlScopeChip()
+            // 换范围立即按当前关键字重新过滤
+            klSearch?.let { applyKlSearch(it.queryText()) }
+            true
+        }
+        popup.show()
+    }
+
+    private fun updateKlScopeChip() {
+        val label = when {
+            klSearchScopeAll -> getString(R.string.kl_search_scope_all)
+            else -> {
+                val gid = klSearchScopeGroupId ?: DataStore.selectedGroup
+                adapter.groupList.find { it.id == gid }?.displayName()
+                    ?: getString(R.string.menu_group)
+            }
+        }
+        klSearch?.setScopeLabel(label)
+    }
+
     @SuppressLint("DetachAndAttachSameFragment")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -334,33 +429,24 @@ class ConfigurationFragment @JvmOverloads constructor(
             toolbar.inflateMenu(R.menu.add_profile_menu)
             toolbar.menu.findItem(R.id.action_global_mode)?.isChecked = DataStore.globalMode
             toolbar.setOnMenuItemClickListener(this)
-            // kl: 把「TCPing / URL Test」从 ☰ 子菜单挪到顶栏，做成
-            // 圆角框 + 虚线分割的连体胶囊（对应原型 .top-capsule）
-            if (toolbar.menu.findItem(R.id.action_connection_tcp_ping) == null) {
-                toolbar.menu.add(0, R.id.action_connection_tcp_ping, 0, getString(R.string.connection_test_tcp_ping))
-                    .setIcon(R.drawable.ic_baseline_compare_arrows_24)
-                    .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
-                toolbar.menu.add(0, R.id.action_connection_url_test, 1, getString(R.string.connection_test_url_test))
-                    .setIcon(R.drawable.ic_baseline_speed_24)
-                    .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
+
+            // kl 顶栏测试胶囊（.top-capsule）：[TCP/HTTP] ┊ [⚡延迟测试]
+            // 圆角框 + 竖向虚线分割，左半切模式右半开测（静默并发）
+            val capsule = KlTestCapsule(requireContext()).apply {
+                setMode(klTestModeTcp)
+                onModeToggle = { tcp -> klTestModeTcp = tcp }
+                onTest = { klRunLatencyTest(klTestModeTcp) }
             }
+            toolbar.menu.add(0, R.id.action_kl_test_capsule, 99, getString(R.string.kl_dock_test))
+                .setActionView(capsule)
+                .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
+
+            setupKlSearch()
         } else {
             toolbar.setTitle(titleRes)
             toolbar.setNavigationIcon(R.drawable.ic_navigation_close)
             toolbar.setNavigationOnClickListener {
                 requireActivity().finish()
-            }
-        }
-
-        val searchView = toolbar.findViewById<SearchView>(R.id.action_search)
-        if (searchView != null) {
-            searchView.setOnQueryTextListener(this)
-            searchView.maxWidth = Int.MAX_VALUE
-
-            searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
-                if (!hasFocus) {
-                    cancelSearch(searchView)
-                }
             }
         }
 
@@ -2495,10 +2581,5 @@ class ConfigurationFragment @JvmOverloads constructor(
                 }
             }
         }
-
-    private fun cancelSearch(searchView: SearchView) {
-        searchView.onActionViewCollapsed()
-        searchView.clearFocus()
-    }
 
 }
