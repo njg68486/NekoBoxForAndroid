@@ -3,9 +3,15 @@
     <string name="kl_nav_route">分流</string>
     <string name="kl_settings_app">软件设置</string>
     <string name="kl_dock_test">延迟测试</string>
+    <string name="kl_testing">测试中</string>
+    <string name="kl_test_started">开始测试 %1$d 个节点 · %2$s</string>
+    <string name="kl_test_done">延迟测试完成</string>
+    <string name="kl_core_not_ready">核心未就绪（stub 调试包）。UI 验证包不能更新订阅/连接 VPN，请安装 CI 正式包。</string>
     <string name="kl_drag_sort">拖动排序</string>
     <string name="kl_search_scope_group">当前分组</string>
     <string name="kl_search_scope_all">全局搜索</string>
+    <string name="kl_search_scope_group_short">分组</string>
+    <string name="kl_search_scope_all_short">全局</string>
     <string name="kl_search_hint">搜索代理节点</string>
     <string name="kl_tab_default">默认</string>
     <string name="kl_tab_sub">订阅</string>

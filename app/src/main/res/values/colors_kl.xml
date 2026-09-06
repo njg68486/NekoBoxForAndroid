@@ -9,4 +9,7 @@
     <color name="kl_delete_bg">#4A3A3E</color>
     <color name="kl_delete_stroke">#6E555A</color>
     <color name="kl_delete_fg">#F2A6B0</color>
+
+    <!-- 选择页迷你卡描边（选中态描边换 kl_dock） -->
+    <color name="kl_pick_stroke">#3A4650</color>
 </resources>

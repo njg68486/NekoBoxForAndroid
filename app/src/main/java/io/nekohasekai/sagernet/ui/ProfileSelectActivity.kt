@@ -16,12 +16,12 @@ class ProfileSelectActivity : ThemedActivity(R.layout.layout_empty),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val selected = intent.getParcelableExtra<ProxyEntity>(EXTRA_SELECTED)
-
         supportFragmentManager.beginTransaction()
             .replace(
                 R.id.fragment_holder,
-                ConfigurationFragment(true, selected, R.string.select_profile)
+                // kl: 两阶段选择（分组卡 → 双列节点网格），替代旧的 select 模式列表。
+                // 已选节点仍走 activity intent 的 EXTRA_SELECTED，fragment 里 onCreate 读。
+                KlProfilePickerFragment()
             )
             .commitAllowingStateLoss()
     }

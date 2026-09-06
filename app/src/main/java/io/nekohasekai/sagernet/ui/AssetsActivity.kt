@@ -279,7 +279,9 @@ class AssetsActivity : ThemedActivity() {
         val fileName = file.name
         val repo = rulesProviders[DataStore.rulesProvider].repoByFileName[fileName]
 
-        val client = Libcore.newHttpClient().apply {
+        // kl: 核心（libcore）未就绪时返回 null，防御性报错
+        val client = Libcore.newHttpClient() ?: error(getString(R.string.kl_core_not_ready))
+        client.apply {
             modernTLS()
             keepAlive()
             trySocks5(
@@ -346,7 +348,9 @@ class AssetsActivity : ThemedActivity() {
         } else {
             return
         }
-        val client = Libcore.newHttpClient().apply {
+        // kl: 核心（libcore）未就绪时返回 null，防御性报错
+        val client = Libcore.newHttpClient() ?: error(getString(R.string.kl_core_not_ready))
+        client.apply {
             modernTLS()
             keepAlive()
             trySocks5(

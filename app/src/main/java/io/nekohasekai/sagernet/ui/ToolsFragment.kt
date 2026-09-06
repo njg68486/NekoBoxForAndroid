@@ -9,6 +9,9 @@ import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.databinding.LayoutToolsBinding
 
 class ToolsFragment : ToolbarFragment(R.layout.layout_tools) {
+    // kl: 二级页 —— 顶栏返回键回到设置 hub
+    override fun klBackTarget() = R.id.nav_settings
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

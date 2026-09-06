@@ -8,9 +8,15 @@
     <string name="kl_nav_route">Route</string>
     <string name="kl_settings_app">App settings</string>
     <string name="kl_dock_test">Latency test</string>
+    <string name="kl_testing">Testing</string>
+    <string name="kl_test_started">Testing %1$d proxies (%2$s)</string>
+    <string name="kl_test_done">Test finished</string>
+    <string name="kl_core_not_ready">Core not ready (stub build). UI-only debug APK cannot update subscriptions or connect VPN.</string>
     <string name="kl_drag_sort">Drag to sort</string>
     <string name="kl_search_scope_group">This group</string>
     <string name="kl_search_scope_all">All groups</string>
+    <string name="kl_search_scope_group_short">Group</string>
+    <string name="kl_search_scope_all_short">All</string>
     <string name="kl_search_hint">Search proxies</string>
     <string name="kl_tab_default">Default</string>
     <string name="kl_tab_sub">Subscriptions</string>

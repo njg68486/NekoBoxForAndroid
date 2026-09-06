@@ -37,6 +37,9 @@ import moe.matsuri.nb4a.utils.Util
 import org.json.JSONObject
 
 class AboutFragment : ToolbarFragment(R.layout.layout_about) {
+    // kl: 二级页 —— 顶栏返回键回到设置 hub
+    override fun klBackTarget() = R.id.nav_settings
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -214,7 +217,9 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
         fun checkUpdate(checkPreview: Boolean) {
             runOnIoDispatcher {
                 try {
-                    val client = Libcore.newHttpClient().apply {
+                    // kl: 核心（libcore）未就绪时返回 null，防御性跳过检查
+                    val client = Libcore.newHttpClient() ?: return@runOnIoDispatcher
+                    client.apply {
                         modernTLS()
                         trySocks5(
                             DataStore.mixedPort,

@@ -18,6 +18,9 @@ import moe.matsuri.nb4a.utils.WebViewUtil
 // Fragment必须有一个无参public的构造函数，否则在数据恢复的时候，会报crash
 
 class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenuItemClickListener {
+    // kl: 二级页 —— 顶栏返回键回到设置 hub
+    override fun klBackTarget() = R.id.nav_settings
+
 
     lateinit var mWebView: WebView
 

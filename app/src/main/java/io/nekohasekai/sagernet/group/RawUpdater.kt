@@ -60,7 +60,11 @@ object RawUpdater : GroupUpdater() {
                 ?: error(app.getString(R.string.no_proxies_found_in_subscription))
         } else {
 
-            val response = Libcore.newHttpClient().apply {
+            // 核心（libcore）未就绪时 newHttpClient() 返回 null —— 给出明确错误
+            // 而不是裸 NPE 闪退（用户看到的是「核心未就绪」而非无情报错）
+            val httpClient = Libcore.newHttpClient()
+                ?: error(app.getString(R.string.kl_core_not_ready))
+            val response = httpClient.apply {
                 trySocks5(
                     DataStore.mixedPort,
                     DataStore.mixedInboundUser,

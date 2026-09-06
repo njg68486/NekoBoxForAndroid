@@ -7,6 +7,9 @@ import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.widget.ListListener
 
 class SettingsFragment : ToolbarFragment(R.layout.layout_config_settings) {
+    // kl: 二级页 —— 顶栏返回键回到设置 hub
+    override fun klBackTarget() = R.id.nav_settings
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

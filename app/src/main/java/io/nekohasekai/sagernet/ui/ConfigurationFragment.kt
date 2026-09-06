@@ -313,14 +313,14 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     override fun onQueryTextSubmit(query: String): Boolean = false
 
-    // ==================== kl: 放大镜形变搜索（全局/分组切换） ====================
+    // ==================== kl: 放大镜形变搜索（分组/全局二态切换） ====================
 
     private var klSearch: KlMagnifierSearch? = null
+    private var klTestCapsule: KlTestCapsule? = null
     private var klOriginalTitle: CharSequence? = null
 
-    /** true = 全局（所有分组页同时过滤）；false + groupId = 只搜某个分组 */
+    /** true = 全局（所有分组同时过滤）；false = 只搜当前分组。点切换钮互相切换 */
     private var klSearchScopeAll = false
-    private var klSearchScopeGroupId: Long? = null
 
     private fun setupKlSearch() {
         // 原生 SearchView 撤下，换放大镜形变控件（挂在标题右侧、菜单左侧）
@@ -330,14 +330,20 @@ class ConfigurationFragment @JvmOverloads constructor(
         val search = KlMagnifierSearch(requireContext()).apply {
             onQueryChange = { q -> applyKlSearch(q) }
             onChromeToggle = { open -> setToolbarChromeVisible(!open) }
-            onScopeClick = { anchor -> showKlSearchScopeMenu(anchor) }
+            onScopeToggle = {
+                klSearchScopeAll = !klSearchScopeAll
+                setScopeGlobal(klSearchScopeAll)
+                // 换范围立即按当前关键字重新过滤
+                applyKlSearch(queryText())
+            }
         }
+        search.setScopeGlobal(false)
         klSearch = search
         toolbar.addView(
             search,
-            Toolbar.LayoutParams(dp2px(28), dp2px(42)).apply {
+            Toolbar.LayoutParams(dp2px(26), dp2px(38)).apply {
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                marginStart = dp2px(8)
+                marginStart = dp2px(6)
             }
         )
     }
@@ -348,62 +354,14 @@ class ConfigurationFragment @JvmOverloads constructor(
         for (i in 0 until toolbar.menu.size()) {
             toolbar.menu.getItem(i).isVisible = visible
         }
-        if (visible) updateKlScopeChip()
     }
 
     private fun applyKlSearch(query: String) {
         if (klSearchScopeAll) {
             adapter.groupFragments.values.forEach { it.adapter?.filter(query) }
         } else {
-            // 指定了分组：先把 pager 切过去，再过滤
-            klSearchScopeGroupId?.let { gid ->
-                val index = adapter.groupList.indexOfFirst { it.id == gid }
-                if (index >= 0) groupPager.setCurrentItem(index, false)
-            }
             getCurrentGroupFragment()?.adapter?.filter(query)
         }
-    }
-
-    /** 分组徽章弹菜单：全局搜索 + 各分组（带当前项勾选态） */
-    private fun showKlSearchScopeMenu(anchor: View) {
-        val popup = PopupMenu(requireContext(), anchor)
-        popup.menu.add(0, 0, 0, getString(R.string.kl_search_scope_all)).apply {
-            isCheckable = true
-            isChecked = klSearchScopeAll
-        }
-        val groups = adapter.groupList
-        groups.forEachIndexed { i, g ->
-            popup.menu.add(0, i + 1, i + 1, g.displayName()).apply {
-                isCheckable = true
-                isChecked = !klSearchScopeAll && (klSearchScopeGroupId == null && DataStore.selectedGroup == g.id || klSearchScopeGroupId == g.id)
-            }
-        }
-        popup.setOnMenuItemClickListener { item ->
-            if (item.itemId == 0) {
-                klSearchScopeAll = true
-                klSearchScopeGroupId = null
-            } else {
-                klSearchScopeAll = false
-                klSearchScopeGroupId = groups.getOrNull(item.itemId - 1)?.id
-            }
-            updateKlScopeChip()
-            // 换范围立即按当前关键字重新过滤
-            klSearch?.let { applyKlSearch(it.queryText()) }
-            true
-        }
-        popup.show()
-    }
-
-    private fun updateKlScopeChip() {
-        val label = when {
-            klSearchScopeAll -> getString(R.string.kl_search_scope_all)
-            else -> {
-                val gid = klSearchScopeGroupId ?: DataStore.selectedGroup
-                adapter.groupList.find { it.id == gid }?.displayName()
-                    ?: getString(R.string.menu_group)
-            }
-        }
-        klSearch?.setScopeLabel(label)
     }
 
     @SuppressLint("DetachAndAttachSameFragment")
@@ -437,6 +395,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                 onModeToggle = { tcp -> klTestModeTcp = tcp }
                 onTest = { klRunLatencyTest(klTestModeTcp) }
             }
+            klTestCapsule = capsule
             toolbar.menu.add(0, R.id.action_kl_test_capsule, 99, getString(R.string.kl_dock_test))
                 .setActionView(capsule)
                 .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
@@ -607,7 +566,15 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     private fun fetchAirportName(link: String): String? {
         if (!link.startsWith("http")) return null
-        val client = Libcore.newHttpClient().apply {
+        // 核心（libcore）未就绪时 newHttpClient() 会返回 null —— 拿名字只是锦上添花，
+        // 绝不能为一个「预取标题」把整个导入流程炸掉。直接跳过，订阅照常用链接当名字。
+        val client = try {
+            Libcore.newHttpClient() ?: return null
+        } catch (e: Exception) {
+            Logs.w(e)
+            return null
+        }
+        client.apply {
             trySocks5(
                 DataStore.mixedPort,
                 DataStore.mixedInboundUser,
@@ -1012,101 +979,6 @@ class ConfigurationFragment @JvmOverloads constructor(
         return false
     }
 
-    inner class TestDialog {
-        val binding = LayoutProgressListBinding.inflate(layoutInflater)
-        val builder = MaterialAlertDialogBuilder(requireContext()).setView(binding.root)
-            .setPositiveButton(R.string.minimize) { _, _ ->
-                minimize()
-            }
-            .setNegativeButton(android.R.string.cancel) { _, _ ->
-                cancel()
-            }
-            .setCancelable(false)
-
-        lateinit var cancel: () -> Unit
-        lateinit var minimize: () -> Unit
-
-        val dialogStatus = AtomicInteger(0) // 1: hidden 2: cancelled
-        var notification: ConnectionTestNotification? = null
-
-        val results: MutableSet<ProxyEntity> = ConcurrentHashMap.newKeySet()
-        var proxyN = 0
-        val finishedN = AtomicInteger(0)
-
-        fun update(profile: ProxyEntity) {
-            if (dialogStatus.get() != 2) {
-                results.add(profile)
-            }
-            runOnMainDispatcher {
-                val context = context ?: return@runOnMainDispatcher
-                val progress = finishedN.addAndGet(1)
-                val status = dialogStatus.get()
-                notification?.updateNotification(
-                    progress,
-                    proxyN,
-                    progress >= proxyN || status == 2
-                )
-                if (status >= 1) return@runOnMainDispatcher
-                if (!isAdded) return@runOnMainDispatcher
-
-                // refresh dialog
-
-                var profileStatusText: String? = null
-                var profileStatusColor = 0
-
-                when (profile.status) {
-                    -1 -> {
-                        profileStatusText = profile.error
-                        profileStatusColor = context.getColorAttr(android.R.attr.textColorSecondary)
-                    }
-
-                    0 -> {
-                        profileStatusText = getString(R.string.connection_test_testing)
-                        profileStatusColor = context.getColorAttr(android.R.attr.textColorSecondary)
-                    }
-
-                    1 -> {
-                        profileStatusText = getString(R.string.available, profile.ping)
-                        profileStatusColor = context.getColour(R.color.material_green_500)
-                    }
-
-                    2 -> {
-                        profileStatusText = profile.error
-                        profileStatusColor = context.getColour(R.color.material_red_500)
-                    }
-
-                    3 -> {
-                        val err = profile.error ?: ""
-                        val msg = Protocols.genFriendlyMsg(err)
-                        profileStatusText = if (msg != err) msg else getString(R.string.unavailable)
-                        profileStatusColor = context.getColour(R.color.material_red_500)
-                    }
-                }
-
-                val text = SpannableStringBuilder().apply {
-                    append("\n" + profile.displayName())
-                    append("\n")
-                    append(
-                        profile.displayType(),
-                        ForegroundColorSpan(context.getProtocolColor(profile.type)),
-                        SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                    append(" ")
-                    append(
-                        profileStatusText,
-                        ForegroundColorSpan(profileStatusColor),
-                        SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                    append("\n")
-                }
-
-                binding.nowTesting.text = text
-                binding.progress.text = "$progress / $proxyN"
-            }
-        }
-
-    }
-
     // ==================== kl: FlClash 风格静默延迟测试 ====================
     //
     // 与上游的差异：
@@ -1123,11 +995,22 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     fun klRunLatencyTest(tcpMode: Boolean) {
         if (DataStore.runningTest) return else DataStore.runningTest = true
-        val group = DataStore.currentGroup()
+        // kl: 测试反馈 —— 胶囊转圈 + 开始 snackbar（静默测试不能毫无指示）。
+        // 注意 group 的获取移进了 try：万一 DB 抖一下抛异常，runningTest 也要在
+        // finally 里复位，否则一次异常后所有测试入口永久失效（表现为点了没反应）。
+        klTestCapsule?.setTesting(true)
+        (activity as? MainActivity)?.snackbar(
+            getString(
+                R.string.kl_test_started,
+                SagerDatabase.proxyDao.countByGroup(DataStore.currentGroupId()),
+                if (tcpMode) "TCP" else "HTTP"
+            )
+        )?.show()
         val testJobs = mutableListOf<Job>()
 
         runOnDefaultDispatcher {
             try {
+                val group = DataStore.currentGroup()
                 val profilesQueue = ConcurrentLinkedQueue(
                     SagerDatabase.proxyDao.getByGroup(group.id)
                 )
@@ -1170,6 +1053,11 @@ class ConfigurationFragment @JvmOverloads constructor(
             } finally {
                 GroupManager.postReload(DataStore.currentGroupId())
                 DataStore.runningTest = false
+                // 复位胶囊 + 完成提示（主线程）
+                runOnMainDispatcher {
+                    klTestCapsule?.setTesting(false)
+                    (activity as? MainActivity)?.snackbar(R.string.kl_test_done)?.show()
+                }
             }
         }
     }

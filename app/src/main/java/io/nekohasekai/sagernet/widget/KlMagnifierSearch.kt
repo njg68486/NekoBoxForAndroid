@@ -23,37 +23,31 @@ import io.nekohasekai.sagernet.ktx.dp2px
 import kotlin.math.sqrt
 
 /**
- * kl 放大镜形变搜索框 —— 按《搜索框形变说明.md》的时序实现：
+ * kl 放大镜形变搜索框 v2 —— 展开/收起时序照《搜索框形变说明.md》，内容布局按用户规格：
  *
- * 展开（点击放大镜）：
- *   ① 手柄 0.18s 缩没（scaleX 1→0 + 淡出）
- *   ② 镜圈撑成框：宽度 0.58s（cubic-bezier(.22,1,.36,1)），圆角 99dp→10dp 0.44s
- *   ③ 材质渐变 0.32s：透明→深底 #2F3640，描边 2dp→1dp 半透明
- *   ④ 内容（分组徽章 + 输入框 + 关闭）在 ~0.24s 后淡入
- * 收起（点关闭）按错峰延迟逆向：
- *   宽度 0.52s 延迟 0.08s；圆角 0.44s 延迟 0.12s；材质褪色 0.28s；
- *   手柄 0.28s 延迟 0.32s 伸回。
+ *   展开后： [分组│全局] [ 输入框................. ] [ ❌ ]
+ *            └ 左端切换钮：点击在「分组搜索」和「全局搜索」之间互相切换（无弹窗）
+ *            └ 右端 ❌：收起
  *
- * 作为 Toolbar 子视图挂在标题右侧（原型 NAV 顺序：标题、搜索、导入、更多、胶囊）。
- * 展开时通过 onChromeToggle 让宿主藏掉标题和全部菜单图标（原型搜索态替换整个顶栏）。
+ * 动画（展开）：手柄 0.18s 缩没 → 宽度 0.58s cubic-bezier(.22,1,.36,1) →
+ *              圆角 99→10dp 0.44s → 材质 0.32s → 内容 0.24s 后淡入。
+ * 收起错峰：宽 0.52s 延迟 0.08s；圆角 0.44s 延迟 0.12s；材质 0.28s；手柄 0.28s 延迟 0.32s。
  */
 class KlMagnifierSearch @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
 ) : FrameLayout(context, attrs) {
 
     companion object {
-        /** md: 宽度撑开 min(288px, 84vw) */
-        private const val MAX_WIDTH_DP = 288
-        private const val COLLAPSED_WIDTH_DP = 28
-        private const val BAR_HEIGHT_DP = 42
+        private const val MAX_WIDTH_DP = 260
+        private const val COLLAPSED_WIDTH_DP = 26
+        private const val BAR_HEIGHT_DP = 38
         private const val RADIUS_BOX_DP = 10
 
-        /** md: cubic-bezier(0.22, 1, 0.36, 1) */
         private val EASE = PathInterpolator(0.22f, 1f, 0.36f, 1f)
 
         private const val BAR_BG = 0xFF2F3640.toInt()
         private const val BAR_STROKE = 0x38FFFFFF
-        private const val CHIP_BG = 0xFF2F7FE5.toInt()
+        private const val SCOPE_BG = 0xFF2F7FE5.toInt()
     }
 
     /** 输入变化（空串 = 清空过滤） */
@@ -62,13 +56,15 @@ class KlMagnifierSearch @JvmOverloads constructor(
     /** true = 展开（宿主藏标题/菜单），false = 已收回 */
     var onChromeToggle: ((Boolean) -> Unit)? = null
 
-    /** 分组徽章被点（宿主弹 全局/分组 选择菜单，anchor = 徽章） */
-    var onScopeClick: ((View) -> Unit)? = null
+    /** 分组↔全局 切换（true = 切到全局；回调里再调 setScopeGlobal 同步文案） */
+    var onScopeToggle: (() -> Unit)? = null
 
     private var opened = false
+    private var scopeAll = false
+
     private val bgDrawable = GradientDrawable()
     private val magnifier = KlMagnifierIcon(context)
-    private val chip = TextView(context)
+    private val scopeButton = TextView(context)
     private val input = EditText(context)
     private val contentRow = LinearLayout(context)
 
@@ -83,18 +79,19 @@ class KlMagnifierSearch @JvmOverloads constructor(
             LayoutParams(dp2px(24), LayoutParams.MATCH_PARENT, Gravity.CENTER)
         )
 
-        chip.apply {
+        // [分组│全局] 切换钮：短文案、胶囊底
+        scopeButton.apply {
             setBackgroundDrawable(GradientDrawable().apply {
                 cornerRadius = dp2px(7).toFloat()
-                setColor(CHIP_BG)
+                setColor(SCOPE_BG)
             })
             setTextColor(Color.WHITE)
             textSize = 11f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
             gravity = Gravity.CENTER
-            setPadding(dp2px(8), 0, dp2px(8), 0)
+            setPadding(dp2px(10), 0, dp2px(10), 0)
+            text = context.getText(R.string.kl_search_scope_group_short)
         }
         input.apply {
             hint = context.getText(R.string.kl_search_hint)
@@ -116,16 +113,12 @@ class KlMagnifierSearch @JvmOverloads constructor(
             gravity = Gravity.CENTER_VERTICAL
             visibility = ViewGroup.INVISIBLE
             alpha = 0f
-            setPadding(dp2px(9), 0, dp2px(6), 0)
+            setPadding(dp2px(6), 0, dp2px(4), 0)
             addView(
-                chip,
+                scopeButton,
                 LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, dp2px(30)
-                ).apply { marginEnd = dp2px(7) }
-            )
-            addView(
-                magnifierGlyph(),
-                LinearLayout.LayoutParams(dp2px(18), dp2px(18)).apply { marginEnd = dp2px(4) }
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp2px(26)
+                ).apply { marginEnd = dp2px(8) }
             )
             addView(
                 input,
@@ -133,13 +126,13 @@ class KlMagnifierSearch @JvmOverloads constructor(
             )
             addView(
                 closeBtn,
-                LinearLayout.LayoutParams(dp2px(30), dp2px(30))
+                LinearLayout.LayoutParams(dp2px(28), dp2px(28))
             )
         }
         addView(contentRow, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
 
         setOnClickListener { if (!opened) open() }
-        chip.setOnClickListener { onScopeClick?.invoke(chip) }
+        scopeButton.setOnClickListener { onScopeToggle?.invoke() }
         closeBtn.setOnClickListener { close() }
         input.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
@@ -150,39 +143,35 @@ class KlMagnifierSearch @JvmOverloads constructor(
         })
     }
 
-    private fun magnifierGlyph(): View =
-        KlMagnifierIcon(context).apply { isClickable = false }
-
-    /** 分组徽章文案（宿主设置：当前分组名 / 目标分组名 / 全局） */
-    fun setScopeLabel(text: String) {
-        chip.text = text
-    }
-
     /** 当前输入框文本 */
     fun queryText(): String = input.text.toString()
 
+    /** 同步切换钮文案：全局时亮橙色，分组时蓝色 */
+    fun setScopeGlobal(all: Boolean) {
+        scopeAll = all
+        scopeButton.text = context.getText(
+            if (all) R.string.kl_search_scope_all_short
+            else R.string.kl_search_scope_group_short
+        )
+        (scopeButton.background as? GradientDrawable)?.setColor(
+            if (all) 0xFFE08E45.toInt() else SCOPE_BG
+        )
+    }
+
     // ==================== 展开 ====================
 
-    @SuppressLint("SetTextI18n")
     fun open() {
         if (opened) return
         opened = true
         onChromeToggle?.invoke(true)
 
-        // ① 手柄极速隐缩 0.18s
-        magnifier.animateHandle(0f, 180)
+        magnifier.animateHandle(0f, 180) // ① 手柄缩没
 
-        // ② 镜圈横向扩张 0.58s（高度固定，宽度从收起宽撑到目标宽）
         val target = targetWidth()
-        animateWidth(dp2px(COLLAPSED_WIDTH_DP), target, 580, 0)
-
-        // ② 圆角重塑 99→10dp 0.44s
+        animateWidth(dp2px(COLLAPSED_WIDTH_DP), target, 580, 0) // ② 撑宽
         animateRadius(dp2px(BAR_HEIGHT_DP) / 2f, dp2px(RADIUS_BOX_DP).toFloat(), 440, 0)
+        animateMaterial(0, 255, dp2px(2), dp2px(1), 320) // ③ 材质
 
-        // ③ 材质转换 0.32s：透明→深底、描边 2dp→1dp
-        animateMaterial(0, 255, dp2px(2), dp2px(1), 320)
-
-        // ④ 内容淡入 + 拉起键盘
         postDelayed({
             if (!opened) return@postDelayed
             contentRow.visibility = ViewGroup.VISIBLE
@@ -192,31 +181,25 @@ class KlMagnifierSearch @JvmOverloads constructor(
         }, 240)
     }
 
-    // ==================== 收起（错峰延迟） ====================
+    // ==================== 收起（错峰） ====================
 
     fun close() {
         if (!opened) return
         opened = false
         imm().hideSoftInputFromWindow(windowToken, 0)
 
-        // 清空过滤（触发 onQueryChange("")）
         if (input.text.isNotEmpty()) input.setText("") else onQueryChange?.invoke("")
 
-        // 内容先淡出
         contentRow.animate().alpha(0f).setDuration(120).withEndAction {
             contentRow.visibility = ViewGroup.INVISIBLE
         }.start()
 
-        // 宽度回缩 0.52s 延迟 0.08s
         animateWidth(currentWidth(), dp2px(COLLAPSED_WIDTH_DP), 520, 80)
-        // 圆角复原 0.44s 延迟 0.12s
         animateRadius(dp2px(RADIUS_BOX_DP).toFloat(), dp2px(BAR_HEIGHT_DP) / 2f, 440, 120)
-        // 材质褪色 0.28s（边框 0.18s 延迟后加粗回 2dp）
         animateMaterial(255, 0, dp2px(1), dp2px(2), 280)
-        // ③ 手柄延迟伸出长成 0.28s 延迟 0.32s
         magnifier.postDelayed({ magnifier.animateHandle(1f, 280) }, 320)
 
-        postDelayed({ onChromeToggle?.invoke(false) }, 660)
+        postDelayed({ onChromeToggle?.invoke(false) }, 640)
     }
 
     // ==================== 动画件 ====================
@@ -227,8 +210,8 @@ class KlMagnifierSearch @JvmOverloads constructor(
     private fun targetWidth(): Int {
         val parentWidth = (parent as? View)?.width ?: 0
         val cap = dp2px(MAX_WIDTH_DP)
-        return if (parentWidth > 0) (parentWidth - dp2px(24)).coerceAtMost(cap)
-            .coerceAtLeast(dp2px(220))
+        return if (parentWidth > 0) (parentWidth - dp2px(16)).coerceAtMost(cap)
+            .coerceAtLeast(dp2px(200))
         else cap
     }
 
@@ -278,8 +261,7 @@ class KlMagnifierSearch @JvmOverloads constructor(
 }
 
 /**
- * 放大镜图形：镜圈 + 45° 手柄，纯 canvas 绘制（md 的静态形态构成）。
- * 手柄可动画（展开时 scaleX→0）。
+ * 放大镜图形：镜圈 + 45° 手柄（canvas 绘制，手柄可动画缩没）。
  */
 class KlMagnifierIcon @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
@@ -312,10 +294,8 @@ class KlMagnifierIcon @JvmOverloads constructor(
         val cx = width / 2f - dp2px(2)
         val cy = height / 2f - dp2px(2)
 
-        // 镜圈
         canvas.drawCircle(cx, cy, r, paint)
 
-        // 手柄：从镜圈边缘沿 45° 伸出 7dp，随 handleScale 缩没
         if (handleScale > 0.01f) {
             val k = r / sqrt(2f)
             canvas.save()
