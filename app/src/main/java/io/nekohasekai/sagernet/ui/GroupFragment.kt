@@ -30,6 +30,7 @@ import kotlinx.coroutines.delay
 import moe.matsuri.nb4a.utils.Util
 import moe.matsuri.nb4a.utils.toBytesString
 import java.lang.NumberFormatException
+import java.text.SimpleDateFormat
 import java.util.*
 
 class GroupFragment : ToolbarFragment(R.layout.layout_group),
@@ -324,7 +325,7 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
         val groupUser = binding.groupUser
         val editButton = binding.edit
         val optionsButton = binding.options
-        val updateButton = binding.groupUpdate
+        val trafficBar = binding.trafficBar
         val subscriptionUpdateProgress = binding.subscriptionUpdateProgress
 
         override fun onMenuItemClick(item: MenuItem): Boolean {
@@ -336,6 +337,10 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
             }
 
             when (item.itemId) {
+                R.id.action_update_subscription -> {
+                    GroupUpdater.startUpdate(proxyGroup, true)
+                }
+
                 R.id.action_universal_qr -> {
                     QRCodeDialog(
                         proxyGroup.toUniversalLink(), proxyGroup.displayName()
@@ -384,17 +389,12 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
             itemView.setOnClickListener { }
 
             editButton.isGone = proxyGroup.ungrouped
-            updateButton.isInvisible = proxyGroup.type != GroupType.SUBSCRIPTION
             groupName.text = proxyGroup.displayName()
 
             editButton.setOnClickListener {
                 startActivity(Intent(it.context, GroupSettingsActivity::class.java).apply {
                     putExtra(GroupSettingsActivity.EXTRA_GROUP_ID, group.id)
                 })
-            }
-
-            updateButton.setOnClickListener {
-                GroupUpdater.startUpdate(proxyGroup, true)
             }
 
             optionsButton.setOnClickListener {
@@ -405,6 +405,7 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
 
                 if (proxyGroup.type != GroupType.SUBSCRIPTION) {
                     popup.menu.removeItem(R.id.action_share_subscription)
+                    popup.menu.removeItem(R.id.action_update_subscription)
                 }
                 popup.setOnMenuItemClickListener(this)
                 popup.show()
@@ -427,7 +428,6 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
                     }
                 }
 
-                updateButton.isInvisible = true
                 editButton.isGone = true
             } else {
                 (groupName.parent as LinearLayout).apply {
@@ -435,81 +435,89 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
                 }
 
                 subscriptionUpdateProgress.isVisible = false
-                updateButton.isInvisible = proxyGroup.type != GroupType.SUBSCRIPTION
                 editButton.isGone = proxyGroup.ungrouped
             }
 
             val subscription = proxyGroup.subscription
-            if (subscription != null && subscription.bytesUsed > 0L) { // SIP008 & Open Online Config
-                groupTraffic.isVisible = true
-                groupTraffic.text = if (subscription.bytesRemaining > 0L) {
-                    app.getString(
-                        R.string.subscription_traffic, Formatter.formatFileSize(
-                            app, subscription.bytesUsed
-                        ), Formatter.formatFileSize(
-                            app, subscription.bytesRemaining
-                        )
-                    )
-                } else {
-                    app.getString(
-                        R.string.subscription_used, Formatter.formatFileSize(
-                            app, subscription.bytesUsed
-                        )
-                    )
-                }
-                groupStatus.setPadding(0)
-            } else if (subscription != null && !subscription.subscriptionUserinfo.isNullOrBlank()) { // Raw
-                var text = ""
 
-                fun get(regex: String): String? {
-                    return regex.toRegex().findAll(subscription.subscriptionUserinfo).mapNotNull {
-                        if (it.groupValues.size > 1) it.groupValues[1] else null
-                    }.firstOrNull()
-                }
+            // 流量数据：优先 SIP008 字段，其次 raw userinfo
+            var usedBytes = 0L
+            var totalBytes = 0L
+            var expireText: String? = null
 
-                try {
-                    var used: Long = 0
-                    get("upload=([0-9]+)")?.apply {
-                        used += toLong()
+            if (subscription != null) {
+                if (subscription.bytesUsed > 0L) { // SIP008 & Open Online Config
+                    usedBytes = subscription.bytesUsed
+                    totalBytes = usedBytes + (subscription.bytesRemaining ?: 0L)
+                } else if (!subscription.subscriptionUserinfo.isNullOrBlank()) { // Raw
+                    fun get(regex: String): String? {
+                        return regex.toRegex().findAll(subscription.subscriptionUserinfo)
+                            .mapNotNull {
+                                if (it.groupValues.size > 1) it.groupValues[1] else null
+                            }.firstOrNull()
                     }
-                    get("download=([0-9]+)")?.apply {
-                        used += toLong()
-                    }
-                    val total = get("total=([0-9]+)")?.toLong() ?: 0
-                    val remain = total - used
-                    if (used > 0 || total > 0) {
-                        text += if (remain > 0) {
-                            getString(
-                                R.string.subscription_traffic,
-                                used.toBytesString(),
-                                remain.toBytesString()
-                            )
-                        } else {
-                            getString(R.string.subscription_used, used.toBytesString())
+
+                    try {
+                        get("upload=([0-9]+)")?.apply { usedBytes += toLong() }
+                        get("download=([0-9]+)")?.apply { usedBytes += toLong() }
+                        totalBytes = get("total=([0-9]+)")?.toLong() ?: 0L
+                        get("expire=([0-9]+)")?.apply {
+                            expireText = SimpleDateFormat(
+                                "yyyy-M-d", Locale.getDefault()
+                            ).format(Date(toLong() * 1000))
                         }
+                    } catch (_: NumberFormatException) {
+                        // ignore
                     }
-                    get("expire=([0-9]+)")?.apply {
-                        text += "\n"
-                        text += getString(
-                            R.string.subscription_expire,
-                            Util.timeStamp2Text(this.toLong() * 1000)
-                        )
-                    }
-                } catch (_: NumberFormatException) {
-                    // ignore
                 }
+            }
 
-                if (text.isNotEmpty()) {
-                    groupTraffic.isVisible = true
-                    groupTraffic.text = text
-                    groupStatus.setPadding(0)
-                }
+            // 第二行：实心流量横条(等比缩放避免超出 Int 范围)
+            if (totalBytes > 0L) {
+                trafficBar.max = 10000
+                trafficBar.progress = ((usedBytes * 10000) / totalBytes).toInt().coerceIn(0, 10000)
+                trafficBar.isVisible = true
             } else {
-                groupTraffic.isVisible = false
-                groupStatus.setPadding(0, 0, 0, dp2px(4))
+                trafficBar.isGone = true
+            }
+
+            // 第三行：已用 X / 总量 Y · 到期时间
+            if (totalBytes > 0L || expireText != null) {
+                val parts = ArrayList<String>()
+                if (totalBytes > 0L) {
+                    parts.add(
+                        getString(
+                            R.string.group_traffic_used_total,
+                            usedBytes.toBytesString(),
+                            totalBytes.toBytesString()
+                        )
+                    )
+                }
+                expireText?.let { parts.add(it) }
+                groupTraffic.isVisible = true
+                groupTraffic.text = parts.joinToString(" · ")
+            } else {
+                groupTraffic.isGone = true
             }
 
             groupUser.text = subscription?.username ?: ""
+
+            // 相对时间："21 天前"
+            fun relativeUpdatedTime(seconds: Long): String {
+                val diff = (System.currentTimeMillis() / 1000) - seconds
+                return when {
+                    diff < 60L -> getString(R.string.group_time_just_now)
+                    diff < 3600L -> getString(R.string.group_time_minutes_ago, diff / 60L)
+                    diff < 86400L -> getString(R.string.group_time_hours_ago, diff / 3600L)
+                    diff < 30L * 86400L -> getString(
+                        R.string.group_time_days_ago, diff / 86400L
+                    )
+
+                    else -> SimpleDateFormat(
+                        "yyyy-M-d", Locale.getDefault()
+                    ).format(Date(seconds * 1000))
+                }
+            }
 
             runOnDefaultDispatcher {
                 val size = SagerDatabase.proxyDao.countByGroup(group.id)
@@ -527,14 +535,13 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
                             groupStatus.text = if (size == 0L) {
                                 getString(R.string.group_status_empty_subscription)
                             } else {
-                                val date = Date(group.subscription!!.lastUpdated * 1000L)
+                                val lastUpdated = group.subscription?.lastUpdated ?: 0
                                 getString(
                                     R.string.group_status_proxies_subscription,
                                     size,
-                                    "${date.month + 1} - ${date.date}"
+                                    relativeUpdatedTime(lastUpdated.toLong())
                                 )
                             }
-
                         }
                     }
                 }

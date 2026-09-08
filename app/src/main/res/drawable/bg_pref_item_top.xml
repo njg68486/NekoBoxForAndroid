@@ -12,8 +12,10 @@
             <solid android:color="@color/pref_card_background" />
         </shape>
     </item>
-    <!-- 底部分割线 -->
+    <!-- 底部分割线(与卡片同宽，不伸出卡片外) -->
     <item
+        android:left="8dp"
+        android:right="8dp"
         android:gravity="bottom"
         android:height="1dp">
         <shape android:shape="rectangle">

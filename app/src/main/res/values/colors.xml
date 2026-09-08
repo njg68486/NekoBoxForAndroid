@@ -338,5 +338,8 @@
     <!-- 设置界面分组圆角卡片 -->
     <color name="pref_card_background">#F5F5F5</color>
     <color name="pref_card_divider">#14000000</color>
+    <color name="group_switcher_bg">#E8EBED</color>
+    <color name="group_popup_bg">#FFFFFF</color>
+    <color name="group_popup_indicator">#34C759</color>
 
 </resources>

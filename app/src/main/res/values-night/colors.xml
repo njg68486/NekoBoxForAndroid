@@ -44,4 +44,7 @@
     <!-- 设置界面分组圆角卡片(夜间) -->
     <color name="pref_card_background">#1E1E1E</color>
     <color name="pref_card_divider">#14FFFFFF</color>
+    <color name="group_switcher_bg">#2A2F33</color>
+    <color name="group_popup_bg">#2C2C2E</color>
+    <color name="group_popup_indicator">#34C759</color>
 </resources>

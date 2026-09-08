@@ -45,7 +45,13 @@
     <string name="group_status_empty">Empty group</string>
     <string name="group_status_empty_subscription">Not updated yet</string>
     <string name="group_status_proxies">%d Proxies</string>
-    <string name="group_status_proxies_subscription">%d Proxies | Updated on %s</string>
+    <string name="group_status_proxies_subscription">%d Proxies · Updated %s</string>
+    <string name="group_traffic_used_total">Used: %1$s / %2$s</string>
+    <string name="group_time_just_now">just now</string>
+    <string name="group_time_minutes_ago">%dm ago</string>
+    <string name="group_time_hours_ago">%dh ago</string>
+    <string name="group_time_days_ago">%dd ago</string>
+    <string name="update_subscription">Update subscription</string>
     <string name="group_no_difference">%s: No difference</string>
     <string name="group_updated">%s: Updated %d proxies</string>
     <string name="group_show_diff">Diff</string>

@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.widget
 
+import android.widget.TextView
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceGroupAdapter
@@ -75,6 +76,16 @@ class PreferenceCardHelper(private val listView: RecyclerView) {
                     CardRole.Header -> R.drawable.bg_pref_card_header
                 }
             )
+            // 移除点击水波纹/高亮：条目背景改为无状态 drawable 后不再闪烁
+            child.foreground = null
+            if (role == CardRole.Header) {
+                // 分组标题严格靠左对齐：与圆角卡片左边缘(8dp inset)垂直对齐
+                val title = child.findViewById<TextView>(android.R.id.title)
+                if (title != null) {
+                    val alignPx = (8 * listView.resources.displayMetrics.density).toInt()
+                    title.setPadding(alignPx, title.paddingTop, title.paddingEnd, title.paddingBottom)
+                }
+            }
         }
     }
 

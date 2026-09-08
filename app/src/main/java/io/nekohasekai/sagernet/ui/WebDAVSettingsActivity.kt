@@ -2,6 +2,7 @@ package io.nekohasekai.sagernet.ui
 
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.text.InputType
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
@@ -69,6 +70,12 @@ class WebDAVSettingsActivity : ThemedActivity() {
         override fun onDestroy() {
             isFragmentAlive = false
             super.onDestroy()
+        }
+
+        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            super.onViewCreated(view, savedInstanceState)
+            // 分组圆角卡片化 + 去水波纹 + 标题左对齐
+            io.nekohasekai.sagernet.widget.PreferenceCardHelper(listView).attach()
         }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {

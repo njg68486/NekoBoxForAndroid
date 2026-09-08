@@ -22,6 +22,7 @@ import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ListPopupWindow
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
@@ -43,8 +44,6 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import io.nekohasekai.sagernet.GroupOrder
 import io.nekohasekai.sagernet.GroupType
 import io.nekohasekai.sagernet.Key
@@ -155,7 +154,6 @@ class ConfigurationFragment @JvmOverloads constructor(
     }
 
     lateinit var adapter: GroupPagerAdapter
-    lateinit var tabLayout: TabLayout
     lateinit var groupPager: ViewPager2
 
     // [分组/全局] 搜索模式切换。false = 分组(仅搜当前分组)，true = 全局(搜全部配置)
@@ -310,6 +308,10 @@ class ConfigurationFragment @JvmOverloads constructor(
                 DataStore.selectedGroup = adapter.groupList[position].id
             }
         }
+
+        override fun onPageSelected(position: Int) {
+            updateGroupSwitcherLabel()
+        }
     }
 
     override fun onQueryTextChange(query: String): Boolean {
@@ -324,13 +326,121 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     override fun onQueryTextSubmit(query: String): Boolean = false
 
+    // ===== 分组切换胶囊(顶部栏，搜索图标左侧) =====
+
+    private var groupSwitcherButton: android.widget.TextView? = null
+    private var groupPopup: ListPopupWindow? = null
+
+    /** 超长名称截断：胶囊最多 6 字符(前5+…)、下拉项最多 8 字符(前7+…) */
+    private fun ellipsizeLabel(name: String, max: Int): String {
+        return if (name.length <= max) name else name.take(max - 1) + "…"
+    }
+
+    private fun setupGroupSwitcher() {
+        if (select) return
+        val switcher = toolbar.menu.findItem(R.id.action_group_switcher)?.actionView
+            as? android.widget.TextView ?: return
+        groupSwitcherButton = switcher
+        switcher.setOnClickListener { anchor -> showGroupSwitcherPopup(anchor) }
+        updateGroupSwitcherLabel()
+    }
+
+    /** 胶囊显示当前分组名(最多 6 字符) */
+    fun updateGroupSwitcherLabel() {
+        if (select || !::adapter.isInitialized) return
+        val name = adapter.groupList.getOrNull(
+            if (::groupPager.isInitialized) groupPager.currentItem else 0
+        )?.displayName() ?: return
+        groupSwitcherButton?.text = ellipsizeLabel(name, 6)
+    }
+
+    /** 下拉分组列表：当前组固定第 1 项并带绿色左边缘指示块，项间细横线，最多 10 项高度 */
+    private fun showGroupSwitcherPopup(anchor: View) {
+        if (select || !::adapter.isInitialized) return
+        val groups = adapter.groupList
+        if (groups.isEmpty()) return
+        val currentItem = if (::groupPager.isInitialized) groupPager.currentItem else 0
+
+        // 当前分组固定排在第 1 项
+        val ordered = groups.toMutableList()
+        if (currentItem in ordered.indices && currentItem != 0) {
+            val current = ordered.removeAt(currentItem)
+            ordered.add(0, current)
+        }
+
+        val density = resources.displayMetrics.density
+        val itemHeightPx = (48 * density).toInt()
+
+        val popup = ListPopupWindow(requireContext())
+        popup.anchorView = anchor
+        popup.width = (176 * density).toInt()
+        popup.height = if (ordered.size <= 10) {
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        } else {
+            itemHeightPx * 10
+        }
+        popup.setDropDownGravity(Gravity.END)
+        popup.verticalOffset = (4 * density).toInt()
+        popup.setBackgroundDrawable(
+            androidx.core.content.ContextCompat.getDrawable(
+                requireContext(), R.drawable.bg_group_popup
+            )
+        )
+        popup.isModal = true
+
+        popup.setAdapter(object : android.widget.BaseAdapter() {
+            override fun getCount() = ordered.size
+            override fun getItem(position: Int) = ordered[position]
+            override fun getItemId(position: Int) = ordered[position].id
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: layoutInflater.inflate(
+                    R.layout.view_group_popup_item, parent, false
+                )
+                val name = view.findViewById<android.widget.TextView>(R.id.group_popup_name)
+                name.text = ellipsizeLabel(ordered[position].displayName(), 8)
+                view.findViewById<View>(R.id.group_indicator)?.isVisible = (position == 0)
+                return view
+            }
+        })
+
+        popup.setOnItemClickListener { _, _, position, _ ->
+            val selected = ordered.getOrNull(position) ?: return@setOnItemClickListener
+            val realIndex = groups.indexOfFirst { it.id == selected.id }
+            if (realIndex >= 0) {
+                groupPager.setCurrentItem(realIndex, false)
+                updateGroupSwitcherLabel()
+            }
+            popup.dismiss()
+        }
+
+        popup.setOnDismissListener {
+            groupPopup = null
+        }
+
+        groupPopup?.dismiss()
+        groupPopup = popup
+        popup.show()
+        // 项间细横线，最后一项底部不画
+        popup.listView?.apply {
+            divider = androidx.core.content.ContextCompat.getDrawable(
+                requireContext(), R.drawable.bg_pref_divider_line
+            )
+            dividerHeight = (1 * density).toInt().coerceAtLeast(1)
+        }
+    }
+
+
     private fun onSearchActivated(searchView: SearchView) {
         (activity as? MainActivity)?.setSearchActive(true)
+        // 搜索展开撑满工具栏时，暂时隐藏分组胶囊(退出搜索恢复)
+        toolbar.menu.findItem(R.id.action_group_switcher)?.isVisible = false
         injectGlobalSearchToggle(searchView)
     }
 
     private fun onSearchDeactivated() {
         removeGlobalSearchToggle()
+        toolbar.menu.findItem(R.id.action_group_switcher)?.isVisible = true
         (activity as? MainActivity)?.setSearchActive(false)
     }
 
@@ -460,7 +570,8 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
 
         groupPager = view.findViewById(R.id.group_pager)
-        tabLayout = view.findViewById(R.id.group_tab)
+        // 分组切换收拢为顶部栏胶囊下拉，原 TabLayout 移除；禁止左右滑动切组
+        groupPager.isUserInputEnabled = false
         adapter = GroupPagerAdapter()
         ProfileManager.addListener(adapter)
         GroupManager.addListener(adapter)
@@ -468,14 +579,7 @@ class ConfigurationFragment @JvmOverloads constructor(
         groupPager.adapter = adapter
         groupPager.offscreenPageLimit = 2
 
-        TabLayoutMediator(tabLayout, groupPager) { tab, position ->
-            if (adapter.groupList.size > position) {
-                tab.text = adapter.groupList[position].displayName()
-            }
-            tab.view.setOnLongClickListener { // clear toast
-                true
-            }
-        }.attach()
+        setupGroupSwitcher()
 
         toolbar.setOnClickListener {
             val fragment = getCurrentGroupFragment()
@@ -1377,9 +1481,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                                 if (newSelectedGroupIndex != null) {
                                     groupPager.setCurrentItem(selectedGroupIndex, false)
                                 }
-                                val hideTab = groupList.size < 2
-                                tabLayout.isGone = hideTab
-                                toolbar.elevation = if (hideTab) 0F else dp2px(4).toFloat()
+                                updateGroupSwitcherLabel()
                                 if (!select) {
                                     groupPager.registerOnPageChangeCallback(updateSelectedCallback)
                                 }
@@ -1417,15 +1519,13 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
 
         override suspend fun groupAdd(group: ProxyGroup) {
-            tabLayout.post {
+            groupPager.post {
                 groupList.add(group)
 
-                if (groupList.any { !it.ungrouped }) tabLayout.post {
-                    tabLayout.visibility = View.VISIBLE
-                }
-
                 notifyItemInserted(groupList.size - 1)
-                tabLayout.getTabAt(groupList.size - 1)?.select()
+                // 新建分组后自动切换过去
+                groupPager.setCurrentItem(groupList.size - 1, false)
+                updateGroupSwitcherLabel()
             }
         }
 
@@ -1433,9 +1533,10 @@ class ConfigurationFragment @JvmOverloads constructor(
             val index = groupList.indexOfFirst { it.id == groupId }
             if (index == -1) return
 
-            tabLayout.post {
+            groupPager.post {
                 groupList.removeAt(index)
                 notifyItemRemoved(index)
+                updateGroupSwitcherLabel()
             }
         }
 
@@ -1443,8 +1544,9 @@ class ConfigurationFragment @JvmOverloads constructor(
             val index = groupList.indexOfFirst { it.id == group.id }
             if (index == -1) return
 
-            tabLayout.post {
-                tabLayout.getTabAt(index)?.text = group.displayName()
+            groupPager.post {
+                groupList[index] = group
+                updateGroupSwitcherLabel()
             }
         }
 

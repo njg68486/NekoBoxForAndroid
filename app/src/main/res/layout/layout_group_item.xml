@@ -21,7 +21,7 @@
             android:visibility="gone"
             app:indicatorColor="?colorPrimary" />
 
-        <!-- 第一行：分组名称 / 用户 + 编辑 / 更多 -->
+        <!-- 第一行：分组名称 / 用户 + 原有操作按钮(编辑 / ⋮) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -73,6 +73,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
                 android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/edit"
                 android:focusable="true"
                 android:nextFocusLeft="@+id/container"
                 android:padding="12dp"
@@ -80,59 +81,49 @@
 
         </LinearLayout>
 
-        <!-- 细横线分割（低对比度半透明，md 需求：0.5~1dp） -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:background="@color/pref_card_divider" />
-
-        <!-- 第二行：流量 / 状态 + 更新订阅 -->
-        <LinearLayout
+        <!-- 第二行：实心流量横条(已用/总量比例)，无数据时隐藏 -->
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/traffic_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:minHeight="6dp"
+            android:visibility="gone"
+            app:indicatorColor="?colorPrimary"
+            app:trackColor="@color/pref_card_divider"
+            app:trackCornerRadius="3dp"
+            app:trackThickness="6dp"
+            tools:max="500"
+            tools:progress="320"
+            tools:visibility="visible" />
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="10dp">
+        <!-- 第三行：流量详情 + 到期时间 -->
+        <TextView
+            android:id="@+id/group_traffic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="9dp"
+            android:paddingEnd="16dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="?android:textColorSecondary"
+            android:visibility="gone"
+            tools:text="已用: 320GB / 500GB · 2026-11-30"
+            tools:visibility="visible" />
 
-                <TextView
-                    android:id="@+id/group_traffic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?android:textColorSecondary"
-                    android:visibility="gone"
-                    tools:text="@string/subscription_traffic" />
-
-                <TextView
-                    android:id="@+id/group_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?android:textColorSecondary"
-                    tools:text="@string/group_status_empty" />
-
-            </LinearLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/group_update"
-                style="?attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/group_update"
-                android:textColor="?android:textColorSecondary" />
-        </LinearLayout>
+        <!-- 第四行：配置数 + 最后更新时间 -->
+        <TextView
+            android:id="@+id/group_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="13dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="?android:textColorSecondary"
+            tools:text="68个配置 · 更新于 21 天前" />
 
     </LinearLayout>
 

@@ -40,6 +40,7 @@ import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.ui.ThemedActivity
 import io.nekohasekai.sagernet.widget.ListListener
+import io.nekohasekai.sagernet.widget.PreferenceCardHelper
 import kotlinx.parcelize.Parcelize
 import kotlin.properties.Delegates
 
@@ -231,6 +232,8 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
             super.onViewCreated(view, savedInstanceState)
 
             ViewCompat.setOnApplyWindowInsetsListener(listView, ListListener)
+            // 分组圆角卡片化 + 去水波纹 + 标题左对齐
+            PreferenceCardHelper(listView).attach()
 
             activity?.apply {
                 viewCreated(view, savedInstanceState)
@@ -342,9 +345,12 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                             LayoutGroupItemBinding.inflate(layoutInflater, this, true).apply {
                                 edit.isVisible = false
                                 options.isVisible = false
+                                trafficBar.isVisible = false
+                                groupTraffic.isVisible = false
                                 groupName.text = group.displayName()
-                                groupUpdate.text = getString(R.string.move)
-                                groupUpdate.setOnClickListener {
+                                groupStatus.text = getString(R.string.move)
+                                // 整卡点击即移动(原"移动"按钮已随卡片改版移除)
+                                root.setOnClickListener {
                                     runOnDefaultDispatcher {
                                         val oldGroupId = ent.groupId
                                         val newGroupId = group.id
