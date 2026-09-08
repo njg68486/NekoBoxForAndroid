@@ -335,4 +335,8 @@
     <color name="nav_selected_icon">#FFFFFF</color>
     <color name="nav_unselected_icon">#7A8A94</color>
 
+    <!-- 设置界面分组圆角卡片 -->
+    <color name="pref_card_background">#F5F5F5</color>
+    <color name="pref_card_divider">#14000000</color>
+
 </resources>

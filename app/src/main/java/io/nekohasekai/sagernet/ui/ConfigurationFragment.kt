@@ -163,6 +163,10 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     private var globalSearchToggle: android.widget.TextView? = null
 
+    // 当前搜索词，供新建的 GroupFragment 在全局搜索时同步过滤
+    var currentSearchQuery: String = ""
+        private set
+
     val alwaysShowAddress by lazy { DataStore.alwaysShowAddress }
 
     @Volatile
@@ -308,6 +312,7 @@ class ConfigurationFragment @JvmOverloads constructor(
     }
 
     override fun onQueryTextChange(query: String): Boolean {
+        currentSearchQuery = query
         if (isGlobalSearch) {
             applyGlobalFilter(query)
         } else {
@@ -400,16 +405,24 @@ class ConfigurationFragment @JvmOverloads constructor(
             searchView.maxWidth = Int.MAX_VALUE
 
             searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
-                if (!hasFocus) {
+                if (hasFocus) {
+                    // 搜索框获得焦点即显示切换按钮（覆盖所有展开路径）
+                    setGlobalSearchToggleVisible(true)
+                    (activity as? MainActivity)?.setSearchActive(true)
+                } else {
                     cancelSearch(searchView)
+                    setGlobalSearchToggleVisible(false)
+                    (activity as? MainActivity)?.setSearchActive(false)
                 }
             }
-            // 搜索框展开/收起时同步切换按钮可见性
+            // 搜索框展开/收起时同步切换按钮可见性，并避免拉起流量面板
             searchView.setOnSearchClickListener {
                 setGlobalSearchToggleVisible(true)
+                (activity as? MainActivity)?.setSearchActive(true)
             }
             searchView.setOnCloseListener {
                 setGlobalSearchToggleVisible(false)
+                (activity as? MainActivity)?.setSearchActive(false)
                 false
             }
         }
@@ -2201,6 +2214,12 @@ class ConfigurationFragment @JvmOverloads constructor(
                     configurationIdList.clear()
                     configurationIdList.addAll(newProfileIds)
                     notifyDataSetChanged()
+
+                    // 全局搜索模式下重新应用过滤
+                    val parent = this@GroupFragment.parentFragment as? ConfigurationFragment
+                    if (parent?.isGlobalSearch == true && parent.currentSearchQuery.isNotEmpty()) {
+                        filter(parent.currentSearchQuery)
+                    }
 
                     if (selectedProfileIndex != -1) {
                         configurationListView.scrollTo(selectedProfileIndex, true)

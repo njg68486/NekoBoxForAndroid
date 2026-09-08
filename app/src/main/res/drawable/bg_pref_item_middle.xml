@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 卡片背景(无圆角)，左右留边距 -->
+    <item
+        android:left="8dp"
+        android:right="8dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/pref_card_background" />
+        </shape>
+    </item>
+    <!-- 底部分割线(与卡片同宽) -->
+    <item
+        android:left="8dp"
+        android:right="8dp"
+        android:gravity="bottom"
+        android:height="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/pref_card_divider" />
+        </shape>
+    </item>
+</layer-list>

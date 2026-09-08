@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 卡片背景(全圆角,无分割线)，四周留边距 -->
+    <item
+        android:left="8dp"
+        android:right="8dp"
+        android:top="6dp"
+        android:bottom="6dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <solid android:color="@color/pref_card_background" />
+        </shape>
+    </item>
+</layer-list>

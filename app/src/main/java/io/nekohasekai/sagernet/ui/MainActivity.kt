@@ -354,6 +354,8 @@ class MainActivity : ThemedActivity(),
     @SuppressLint("CommitTransaction")
     fun displayFragment(fragment: ToolbarFragment) {
         currentMainFragment = fragment
+        // 切换页面时重置搜索模式状态
+        if (searchModeActive) setSearchActive(false)
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_holder, fragment)
             .commitAllowingStateLoss()
@@ -396,7 +398,33 @@ class MainActivity : ThemedActivity(),
     }
 
     fun driveBottomBar(scrollDy: Int) {
+        // 搜索模式下不驱动流量条显示/隐藏，避免点击搜索误拉起实时上下行面板
+        if (searchModeActive) return
         binding.stats.onListScrolled(scrollDy)
+    }
+
+    private var searchModeActive = false
+
+    fun setSearchActive(active: Boolean) {
+        if (searchModeActive == active) return
+        searchModeActive = active
+        if (active) {
+            // 搜索时隐藏实时上下行面板
+            binding.stats.syncMainControls(
+                currentMainFragment is ConfigurationFragment,
+                DataStore.serviceState,
+                showWhenConnected = false,
+                animate = false,
+            )
+        } else {
+            // 退出搜索，恢复正常的连接显示逻辑
+            binding.stats.syncMainControls(
+                currentMainFragment is ConfigurationFragment,
+                DataStore.serviceState,
+                showWhenConnected = DataStore.serviceState == BaseService.State.Connected,
+                animate = false,
+            )
+        }
     }
 
     fun displayFragmentWithId(@IdRes id: Int): Boolean {

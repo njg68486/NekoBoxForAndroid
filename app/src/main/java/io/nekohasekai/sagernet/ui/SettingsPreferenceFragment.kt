@@ -17,6 +17,7 @@ import io.nekohasekai.sagernet.database.preference.EditTextPreferenceModifiers
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.utils.AppLocale
 import io.nekohasekai.sagernet.utils.Theme
+import io.nekohasekai.sagernet.widget.PreferenceCardHelper
 import moe.matsuri.nb4a.ui.*
 import android.os.Handler
 import android.os.Looper
@@ -36,6 +37,8 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         super.onViewCreated(view, savedInstanceState)
 
         listView.layoutManager = FixedLinearLayoutManager(listView)
+        // 分组圆角卡片化：每个分类条目渲染为圆角卡片+分割线
+        PreferenceCardHelper(listView).attach()
     }
 
     private val reloadListener = Preference.OnPreferenceChangeListener { _, _ ->
