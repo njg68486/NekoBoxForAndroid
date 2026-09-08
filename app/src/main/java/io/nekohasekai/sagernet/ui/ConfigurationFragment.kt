@@ -161,6 +161,8 @@ class ConfigurationFragment @JvmOverloads constructor(
     var isGlobalSearch: Boolean = false
         private set
 
+    private var globalSearchToggle: android.widget.TextView? = null
+
     val alwaysShowAddress by lazy { DataStore.alwaysShowAddress }
 
     @Volatile
@@ -319,6 +321,7 @@ class ConfigurationFragment @JvmOverloads constructor(
     private fun setupGlobalSearchToggle() {
         val toggle = toolbar.findViewById<android.widget.TextView>(R.id.global_search_toggle)
             ?: return
+        globalSearchToggle = toggle
         updateSearchToggleText(toggle)
         toggle.setOnClickListener {
             isGlobalSearch = !isGlobalSearch
@@ -330,6 +333,12 @@ class ConfigurationFragment @JvmOverloads constructor(
                 onQueryTextChange(query)
             }
         }
+        // 默认隐藏，仅在搜索框展开时显示
+        setGlobalSearchToggleVisible(false)
+    }
+
+    private fun setGlobalSearchToggleVisible(visible: Boolean) {
+        globalSearchToggle?.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     private fun updateSearchToggleText(toggle: android.widget.TextView) {
@@ -394,6 +403,14 @@ class ConfigurationFragment @JvmOverloads constructor(
                 if (!hasFocus) {
                     cancelSearch(searchView)
                 }
+            }
+            // 搜索框展开/收起时同步切换按钮可见性
+            searchView.setOnSearchClickListener {
+                setGlobalSearchToggleVisible(true)
+            }
+            searchView.setOnCloseListener {
+                setGlobalSearchToggleVisible(false)
+                false
             }
         }
 

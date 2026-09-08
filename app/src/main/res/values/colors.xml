@@ -329,4 +329,10 @@
     <color name="card_elevated_black">#EEEEEE</color>
     <color name="card_elevated_verdant_mint">#EBF9F3</color>
 
+    <!-- NekoBox UI Redesign：底部导航栏 -->
+    <color name="nav_background_container">#FFFFFF</color>
+    <color name="nav_selected_bg">#28404F</color>
+    <color name="nav_selected_icon">#FFFFFF</color>
+    <color name="nav_unselected_icon">#7A8A94</color>
+
 </resources>

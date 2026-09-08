@@ -228,6 +228,15 @@
         <item name="cornerSize">@dimen/nav_item_corner_radius</item>
     </style>
 
+    <style name="Widget.SagerNet.BottomNav.ActiveIndicator"
+        parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/nav_selected_bg</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <item name="android:width">56dp</item>
+        <item name="android:height">36dp</item>
+        <item name="marginHorizontal">6dp</item>
+    </style>
+
     <style name="ThemeOverlay.SagerNet.AlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog.SagerNet">
         <item name="android:windowBackground">@drawable/bg_dialog</item>
     </style>

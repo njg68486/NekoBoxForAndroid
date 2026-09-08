@@ -34,4 +34,10 @@
     <color name="card_elevated_yellow">#2C2A17</color>
     <color name="card_elevated_black">#151515</color>
     <color name="card_elevated_verdant_mint">#10241C</color>
+
+    <!-- NekoBox UI Redesign：底部导航栏(夜间) -->
+    <color name="nav_background_container">#1E262B</color>
+    <color name="nav_selected_bg">#28404F</color>
+    <color name="nav_selected_icon">#FFFFFF</color>
+    <color name="nav_unselected_icon">#7A8A94</color>
 </resources>

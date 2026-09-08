@@ -80,8 +80,14 @@ class MainActivity : ThemedActivity(),
                 supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment
         }
         onBackPressedDispatcher.addCallback {
-            if (supportFragmentManager.findFragmentById(R.id.fragment_holder) is ConfigurationFragment) {
+            val fragment =
+                supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment
+            if (fragment is ConfigurationFragment) {
+                // 配置页返回 = 退出应用
                 moveTaskToBack(true)
+            } else if (fragment?.showBackNav == true) {
+                // 二级页面返回 = 回到设置中心
+                displayFragmentWithId(R.id.nav_settings)
             } else {
                 displayFragmentWithId(R.id.nav_configuration)
             }

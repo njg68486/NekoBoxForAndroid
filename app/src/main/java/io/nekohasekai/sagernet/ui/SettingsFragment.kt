@@ -8,6 +8,8 @@ import io.nekohasekai.sagernet.widget.ListListener
 
 class SettingsFragment : ToolbarFragment(R.layout.layout_config_settings) {
 
+    override val showBackNav: Boolean = true
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 

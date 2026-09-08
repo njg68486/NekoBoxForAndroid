@@ -38,6 +38,8 @@ import org.json.JSONObject
 
 class AboutFragment : ToolbarFragment(R.layout.layout_about) {
 
+    override val showBackNav: Boolean = true
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
