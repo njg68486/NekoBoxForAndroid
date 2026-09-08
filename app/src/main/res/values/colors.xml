@@ -331,14 +331,21 @@
 
     <!-- NekoBox UI Redesign：底部导航栏 -->
     <color name="nav_background_container">#FFFFFF</color>
-    <color name="nav_selected_bg">#28404F</color>
-    <color name="nav_selected_icon">#FFFFFF</color>
+    <!-- 日间选中胶囊：柔和灰白，与白底形成微弱层次感 -->
+    <color name="nav_selected_bg">#E8ECF0</color>
+    <!-- 日间选中图标/文字：主题高亮蓝 -->
+    <color name="nav_selected_icon">#3898EC</color>
     <color name="nav_unselected_icon">#7A8A94</color>
+    <!-- 启动悬浮胶囊：固定经典高亮蓝，日夜间不变 -->
+    <color name="fab_background">#00A3FF</color>
 
     <!-- 设置界面分组圆角卡片 -->
     <color name="pref_card_background">#F5F5F5</color>
     <color name="pref_card_divider">#14000000</color>
     <color name="group_switcher_bg">#E8EBED</color>
+    <!-- 卡片选中态：日间浅水蓝底 + 天青蓝描边 -->
+    <color name="card_selected_bg">#CBE7FF</color>
+    <color name="card_selected_stroke">#3898EC</color>
     <color name="group_popup_bg">#FFFFFF</color>
     <color name="group_popup_indicator">#34C759</color>
 

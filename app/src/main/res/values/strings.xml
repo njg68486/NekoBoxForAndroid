@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">NekoBoxF</string>
-    <string name="app_name_long" translatable="false">NekoBoxF for Android</string>
+    <string name="app_name" translatable="false">neko</string>
+    <string name="app_name_long" translatable="false">neko for Android</string>
     <string name="app_desc">The universal proxy toolchain for Android, written in Kotlin.</string>
     <string name="project">Project</string>
     <string name="github">Source code</string>
@@ -39,6 +39,9 @@
     <string name="layout_single_column">Single column</string>
     <string name="layout_double_column">Double column</string>
     <string name="sort_and_layout">Sort and Appearance</string>
+    <string name="fab_latency">Latency: %d ms</string>
+    <string name="fab_latency_none">Latency: -- ms</string>
+    <string name="locate_current_group">Locate current group</string>
     <string name="card_style">Card</string>
     <string name="card_style_classic">Classic</string>
     <string name="card_style_stroke">Stroke</string>

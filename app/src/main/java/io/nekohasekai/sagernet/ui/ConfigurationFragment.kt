@@ -16,9 +16,7 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -28,7 +26,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
-import androidx.core.graphics.ColorUtils
 import androidx.core.net.toUri
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -139,7 +136,6 @@ import java.util.zip.ZipInputStream
 import kotlin.collections.set
 import androidx.appcompat.app.AlertDialog
 import io.nekohasekai.sagernet.database.SubscriptionBean
-import kotlin.math.abs
 
 class ConfigurationFragment @JvmOverloads constructor(
     val select: Boolean = false, val selectedItem: ProxyEntity? = null, val titleRes: Int = 0
@@ -331,11 +327,6 @@ class ConfigurationFragment @JvmOverloads constructor(
     private var groupSwitcherButton: android.widget.TextView? = null
     private var groupPopup: ListPopupWindow? = null
 
-    /** 超长名称截断：胶囊最多 6 字符(前5+…)、下拉项最多 8 字符(前7+…) */
-    private fun ellipsizeLabel(name: String, max: Int): String {
-        return if (name.length <= max) name else name.take(max - 1) + "…"
-    }
-
     private fun setupGroupSwitcher() {
         if (select) return
         val switcher = toolbar.menu.findItem(R.id.action_group_switcher)?.actionView
@@ -345,13 +336,13 @@ class ConfigurationFragment @JvmOverloads constructor(
         updateGroupSwitcherLabel()
     }
 
-    /** 胶囊显示当前分组名(最多 6 字符) */
+    /** 胶囊显示当前分组名：固定最大宽度(约 6 个全角字符)内系统级自适应省略 */
     fun updateGroupSwitcherLabel() {
         if (select || !::adapter.isInitialized) return
         val name = adapter.groupList.getOrNull(
             if (::groupPager.isInitialized) groupPager.currentItem else 0
         )?.displayName() ?: return
-        groupSwitcherButton?.text = ellipsizeLabel(name, 6)
+        groupSwitcherButton?.text = name
     }
 
     /** 下拉分组列表：当前组固定第 1 项并带绿色左边缘指示块，项间细横线，最多 10 项高度 */
@@ -398,7 +389,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     R.layout.view_group_popup_item, parent, false
                 )
                 val name = view.findViewById<android.widget.TextView>(R.id.group_popup_name)
-                name.text = ellipsizeLabel(ordered[position].displayName(), 8)
+                name.text = ordered[position].displayName()
                 view.findViewById<View>(R.id.group_indicator)?.isVisible = (position == 0)
                 return view
             }
@@ -432,7 +423,6 @@ class ConfigurationFragment @JvmOverloads constructor(
 
 
     private fun onSearchActivated(searchView: SearchView) {
-        (activity as? MainActivity)?.setSearchActive(true)
         // 搜索展开撑满工具栏时，暂时隐藏分组胶囊(退出搜索恢复)
         toolbar.menu.findItem(R.id.action_group_switcher)?.isVisible = false
         injectGlobalSearchToggle(searchView)
@@ -441,7 +431,6 @@ class ConfigurationFragment @JvmOverloads constructor(
     private fun onSearchDeactivated() {
         removeGlobalSearchToggle()
         toolbar.menu.findItem(R.id.action_group_switcher)?.isVisible = true
-        (activity as? MainActivity)?.setSearchActive(false)
     }
 
     private fun findViewByEntryName(root: View, entryName: String): View? {
@@ -1849,36 +1838,6 @@ class ConfigurationFragment @JvmOverloads constructor(
             if (!select) {
                 undoManager = UndoSnackbarManager(activity as MainActivity, adapter!!)
                 setupItemTouchHelper()
-                setupBottomBarScrollDriver()
-            }
-        }
-
-        private fun setupBottomBarScrollDriver() {
-            val mainActivity = activity as? MainActivity ?: return
-            configurationListView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dy != 0) mainActivity.driveBottomBar(dy)
-                }
-            })
-
-            val touchSlop = ViewConfiguration.get(requireContext()).scaledTouchSlop
-            var lastRawY = 0f
-            configurationListView.setOnTouchListener { recyclerView, event ->
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> lastRawY = event.rawY
-                    MotionEvent.ACTION_MOVE -> {
-                        val cannotScroll = !recyclerView.canScrollVertically(-1) &&
-                                !recyclerView.canScrollVertically(1)
-                        if (cannotScroll) {
-                            val fingerDy = event.rawY - lastRawY
-                            if (abs(fingerDy) >= touchSlop) {
-                                mainActivity.driveBottomBar(-fingerDy.toInt())
-                                lastRawY = event.rawY
-                            }
-                        }
-                    }
-                }
-                false
             }
         }
 
@@ -2408,7 +2367,6 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             val trafficText: TextView = view.findViewById(R.id.traffic_text)
             private val card = view as MaterialCardView
-            private val selectedIndicator: View = view.findViewById(R.id.selected_indicator)
             val editButton: ImageView = view.findViewById(R.id.edit)
             val doubleColumnMenuButton: ImageView = view.findViewById(R.id.double_column_menu)
             val shareLayout: LinearLayout = view.findViewById(R.id.share)
@@ -2535,41 +2493,23 @@ class ConfigurationFragment @JvmOverloads constructor(
             private fun applySelected(selected: Boolean) {
                 val ctx = card.context
                 val surface = ctx.getColorAttr(R.attr.colorSurface)
-                if (DataStore.profileCardStyle == 1) {
-                    val primary = ctx.getColorAttr(R.attr.colorPrimary)
-                    selectedIndicator.isVisible = false
-                    card.cardElevation = 0f
-                    card.strokeWidth = ctx.resources.getDimensionPixelSize(
-                        if (selected) R.dimen.card_stroke_width_selected
-                        else R.dimen.card_stroke_width
-                    )
-                    card.strokeColor =
-                        if (selected) primary else ctx.getColour(R.color.card_stroke)
-                    card.setCardBackgroundColor(
-                        if (selected) {
-                            ColorUtils.compositeColors(
-                                ColorUtils.setAlphaComponent(primary, 26), surface
-                            )
-                        } else {
-                            surface
-                        }
-                    )
-                } else {
-                    val primary = ctx.getColorAttr(R.attr.selectedColorPrimary)
-                    selectedIndicator.isVisible = selected
-                    card.strokeWidth = 0
-                    card.cardElevation =
-                        ctx.resources.getDimension(R.dimen.profile_card_elevation_classic)
-                    card.setCardBackgroundColor(
-                        if (selected) {
-                            ColorUtils.compositeColors(
-                                ColorUtils.setAlphaComponent(primary, 20), surface
-                            )
-                        } else {
-                            surface
-                        }
-                    )
-                }
+                card.cardElevation = 0f
+                card.strokeWidth = ctx.resources.getDimensionPixelSize(
+                    if (selected) R.dimen.card_stroke_width_selected
+                    else R.dimen.card_stroke_width
+                )
+                card.strokeColor =
+                    if (selected) ctx.getColour(R.color.card_selected_stroke)
+                    else ctx.getColour(R.color.card_stroke)
+                card.setCardBackgroundColor(
+                    if (selected && DataStore.profileCardStyle != 1) {
+                        // 经典模式：选中时背景填充浅水蓝(日)/暗墨青蓝(夜)
+                        ctx.getColour(R.color.card_selected_bg)
+                    } else {
+                        // 描边模式或未选中：保持默认底色
+                        surface
+                    }
+                )
             }
 
             fun bind(proxyEntity: ProxyEntity) {

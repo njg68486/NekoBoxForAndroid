@@ -13,6 +13,7 @@ import java.io.File
 const val KB = 1024L
 const val MB = KB * 1024
 const val GB = MB * 1024
+const val TB = GB * 1024
 
 fun SagerNet.cleanWebview() {
     var pathToClean = "app_webview"
@@ -48,12 +49,14 @@ fun Context.getDrawableByName(name: String?): Drawable? {
 // Traffic display
 
 fun Long.toBytesString(): String {
+    // 十进制单位标签规范：统一 B / KB / MB / GB / TB（禁止 GiB/MiB/KiB 二进制缩写）
     val size = this.toDouble()
     return when {
-        this >= GB -> String.format("%.2f GiB", size / GB)
-        this >= MB -> String.format("%.2f MiB", size / MB)
-        this >= KB -> String.format("%.2f KiB", size / KB)
-        else -> "$this Bytes"
+        this >= TB -> String.format("%.2f TB", size / TB)
+        this >= GB -> String.format("%.2f GB", size / GB)
+        this >= MB -> String.format("%.2f MB", size / MB)
+        this >= KB -> String.format("%.2f KB", size / KB)
+        else -> "$this B"
     }
 }
 

@@ -38,13 +38,19 @@
     <!-- NekoBox UI Redesign：底部导航栏(夜间) -->
     <color name="nav_background_container">#1E262B</color>
     <color name="nav_selected_bg">#28404F</color>
-    <color name="nav_selected_icon">#FFFFFF</color>
+    <!-- 夜间选中图标/文字：主题高亮蓝(冰川浅蓝) -->
+    <color name="nav_selected_icon">#56B8FF</color>
     <color name="nav_unselected_icon">#7A8A94</color>
+    <!-- 启动悬浮胶囊：固定经典高亮蓝，日夜间不变 -->
+    <color name="fab_background">#00A3FF</color>
 
     <!-- 设置界面分组圆角卡片(夜间) -->
     <color name="pref_card_background">#1E1E1E</color>
     <color name="pref_card_divider">#14FFFFFF</color>
     <color name="group_switcher_bg">#2A2F33</color>
+    <!-- 卡片选中态：夜间暗墨青蓝底 + 冰川浅蓝描边 -->
+    <color name="card_selected_bg">#203B46</color>
+    <color name="card_selected_stroke">#56B8FF</color>
     <color name="group_popup_bg">#2C2C2E</color>
     <color name="group_popup_indicator">#34C759</color>
 </resources>

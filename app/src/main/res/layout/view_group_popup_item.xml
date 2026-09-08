@@ -6,11 +6,13 @@
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
-    <!-- 当前分组指示条：仅第 1 项(当前组)显示为绿色实心块 -->
+    <!-- 当前分组指示条：严格包裹在第 1 项容器内部，紧贴弹窗内壁左边缘，
+         约一个字符宽、垂直居中(20dp 高，避开弹窗 12dp 圆角裁切区) -->
     <View
         android:id="@+id/group_indicator"
-        android:layout_width="4dp"
-        android:layout_height="match_parent"
+        android:layout_width="6dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center_vertical"
         android:background="@color/group_popup_indicator"
         android:visibility="invisible" />
 
@@ -18,12 +20,13 @@
         android:id="@+id/group_popup_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="12dp"
         android:layout_weight="1"
         android:ellipsize="end"
         android:maxLines="1"
+        android:singleLine="true"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="15sp"
-        tools:text="饿饭CC云.Y…" />
+        tools:text="Default" />
 
 </LinearLayout>

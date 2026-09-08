@@ -184,15 +184,6 @@
 
         </LinearLayout>
 
-        <View
-            android:id="@+id/selected_indicator"
-            android:layout_width="@dimen/profile_card_selected_bar_width"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:background="?attr/selectedColorPrimary"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
     </FrameLayout>
 
 </com.google.android.material.card.MaterialCardView>

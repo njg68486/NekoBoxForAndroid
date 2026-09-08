@@ -1,5 +1,7 @@
 package io.nekohasekai.sagernet.widget
 
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
@@ -62,6 +64,10 @@ class PreferenceCardHelper(private val listView: RecyclerView) {
 
     /** 给当前可见的所有条目应用背景。 */
     private fun applyToVisibleChildren() {
+        val density = listView.resources.displayMetrics.density
+        // 图标与文本块间距：16dp~20dp 规范取 20dp；条目内容距卡片左边缘 16dp
+        val itemPaddingStartPx = (16 * density).toInt()
+        val textGapPx = (20 * density).toInt()
         for (i in 0 until listView.childCount) {
             val child = listView.getChildAt(i)
             val pos = listView.getChildAdapterPosition(child)
@@ -82,11 +88,29 @@ class PreferenceCardHelper(private val listView: RecyclerView) {
                 // 分组标题严格靠左对齐：与圆角卡片左边缘(8dp inset)垂直对齐
                 val title = child.findViewById<TextView>(android.R.id.title)
                 if (title != null) {
-                    val alignPx = (8 * listView.resources.displayMetrics.density).toInt()
+                    val alignPx = (8 * density).toInt()
                     title.setPadding(alignPx, title.paddingTop, title.paddingEnd, title.paddingBottom)
                 }
+            } else {
+                // 图标紧靠卡片内左侧边缘(内容 paddingStart 16dp)，
+                // 并增大图标与右侧"标题+描述"文本块的间距至 20dp，垂直居中
+                child.setPadding(
+                    itemPaddingStartPx, child.paddingTop, child.paddingEnd, child.paddingBottom
+                )
+                applyIconTextGap(child, textGapPx)
             }
         }
+    }
+
+    /** 调整偏好条目内 icon_frame 与文本块的间距（androidx.preference 默认 15dp → 20dp）。 */
+    private fun applyIconTextGap(child: View, gapPx: Int) {
+        val root = child as? ViewGroup ?: return
+        if (root.childCount < 2) return
+        val textBlock = root.getChildAt(1) ?: return
+        val lp = textBlock.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        if (lp.marginStart == gapPx) return
+        lp.marginStart = gapPx
+        textBlock.layoutParams = lp
     }
 
     /**

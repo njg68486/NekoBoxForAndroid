@@ -98,21 +98,21 @@
             tools:progress="320"
             tools:visibility="visible" />
 
-        <!-- 第三行：流量详情 + 到期时间 -->
+        <!-- 第三行：流量详情 + 到期时间（12sp 紧凑字号） -->
         <TextView
             android:id="@+id/group_traffic"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingStart="16dp"
-            android:paddingTop="9dp"
+            android:paddingTop="5dp"
             android:paddingEnd="16dp"
-            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textSize="12sp"
             android:textColor="?android:textColorSecondary"
             android:visibility="gone"
-            tools:text="已用: 320GB / 500GB · 2026-11-30"
+            tools:text="已用: 6.83 GB / 1000.00 GB · 2026-11-30"
             tools:visibility="visible" />
 
-        <!-- 第四行：配置数 + 最后更新时间 -->
+        <!-- 第四行：配置数 + 最后更新时间（11sp 进一步收缩） -->
         <TextView
             android:id="@+id/group_status"
             android:layout_width="wrap_content"
@@ -121,7 +121,7 @@
             android:paddingTop="3dp"
             android:paddingEnd="16dp"
             android:paddingBottom="13dp"
-            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textSize="11sp"
             android:textColor="?android:textColorSecondary"
             tools:text="68个配置 · 更新于 21 天前" />
 

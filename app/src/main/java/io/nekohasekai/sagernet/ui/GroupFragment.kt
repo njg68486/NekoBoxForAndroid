@@ -13,7 +13,9 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.view.*
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.nekohasekai.sagernet.GroupType
 import io.nekohasekai.sagernet.R
@@ -110,6 +112,10 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.action_locate_group -> {
+                locateCurrentGroup()
+            }
+
             R.id.action_new_group -> {
                 startActivity(Intent(context, GroupSettingsActivity::class.java))
             }
@@ -129,6 +135,21 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
             }
         }
         return true
+    }
+
+    /**
+     * ⊙ 定位：平滑滚动到当前正在使用的分组卡片，将其置顶显示；
+     * 若本就处于顶部首位则保持不动。
+     */
+    private fun locateCurrentGroup() {
+        val targetId = DataStore.selectedGroup
+        val index = groupAdapter.groupList.indexOfFirst { it.id == targetId }
+        if (index <= 0) return // 不存在或已在顶部首位
+        val scroller = object : LinearSmoothScroller(requireContext()) {
+            override fun getVerticalSnapPreference() = SNAP_TO_START
+        }
+        scroller.targetPosition = index
+        layoutManager.startSmoothScroll(scroller)
     }
 
     private lateinit var selectedGroup: ProxyGroup
@@ -385,6 +406,27 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
 
         fun bind(group: ProxyGroup) {
             proxyGroup = group
+
+            // 选中态高亮：当前正在使用的分组卡片（与配置卡片选中规范一致）
+            // 经典模式 = 描边变色 + 背景填充；描边模式 = 仅描边变色
+            val card = itemView as MaterialCardView
+            val selected = group.id == DataStore.selectedGroup
+            if (selected) {
+                card.strokeWidth = card.resources.getDimensionPixelSize(
+                    R.dimen.card_stroke_width_selected
+                )
+                card.strokeColor = card.context.getColour(R.color.card_selected_stroke)
+                card.setCardBackgroundColor(
+                    if (DataStore.profileCardStyle != 1) {
+                        card.context.getColour(R.color.card_selected_bg)
+                    } else {
+                        card.context.getColour(R.color.pref_card_background)
+                    }
+                )
+            } else {
+                card.strokeWidth = 0
+                card.setCardBackgroundColor(card.context.getColour(R.color.pref_card_background))
+            }
 
             itemView.setOnClickListener { }
 

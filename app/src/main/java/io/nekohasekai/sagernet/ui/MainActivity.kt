@@ -11,7 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.RemoteException
 import android.view.KeyEvent
-import android.view.View
 import androidx.activity.addCallback
 import androidx.annotation.IdRes
 import androidx.core.app.ActivityCompat
@@ -66,7 +65,6 @@ class MainActivity : ThemedActivity(),
         val animateInitialControls = savedInstanceState == null
 
         binding = LayoutMainBinding.inflate(layoutInflater)
-        binding.fab.initProgress(binding.fabProgress)
         setupBottomNavTabs()
 
         if (savedInstanceState == null) {
@@ -94,14 +92,12 @@ class MainActivity : ThemedActivity(),
                 null
             )
         }
-        binding.stats.setOnClickListener { if (DataStore.serviceState.connected) binding.stats.testConnection() }
-
         setContentView(binding.root)
         currentMainFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment
                 ?: currentMainFragment
         if (!animateInitialControls) {
-            syncMainControls(showWhenConnected = false, animate = false)
+            syncMainControls(animate = false)
         }
         changeState(
             BaseService.State.Idle,
@@ -156,7 +152,6 @@ class MainActivity : ThemedActivity(),
             currentMainFragment = restoredFragment
             syncMainControls(
                 fragment = restoredFragment,
-                showWhenConnected = DataStore.serviceState == BaseService.State.Connected,
                 animate = false,
             )
         }
@@ -354,40 +349,22 @@ class MainActivity : ThemedActivity(),
     @SuppressLint("CommitTransaction")
     fun displayFragment(fragment: ToolbarFragment) {
         currentMainFragment = fragment
-        // 切换页面时重置搜索模式状态
-        if (searchModeActive) setSearchActive(false)
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_holder, fragment)
             .commitAllowingStateLoss()
-        syncMainControls(fragment, showWhenConnected = false, animate = true)
+        syncMainControls(fragment, animate = true)
     }
 
     private fun syncMainControls(
         fragment: Any? = currentMainFragment
             ?: supportFragmentManager.findFragmentById(R.id.fragment_holder),
-        showWhenConnected: Boolean,
         animate: Boolean,
     ) {
         val showControls = fragment is ConfigurationFragment || DataStore.showBottomBar
-        binding.stats.useExternalScrollDriver = fragment is ConfigurationFragment
-        binding.stats.syncMainControls(
-            showControls,
-            DataStore.serviceState,
-            showWhenConnected,
-            animate,
-        )
-        binding.fab.animate().cancel()
         if (showControls) {
-            binding.fab.show()
+            binding.fab.show(animate)
         } else {
-            binding.fab.hideProgress()
-            binding.fabProgress.hide()
-            binding.fabProgress.visibility = View.INVISIBLE
-            if (animate && binding.fab.isLaidOut) {
-                binding.fab.hide()
-            } else {
-                binding.fab.visibility = View.INVISIBLE
-            }
+            binding.fab.hide(animate)
         }
     }
 
@@ -395,27 +372,6 @@ class MainActivity : ThemedActivity(),
         val fragment = currentMainFragment
             ?: supportFragmentManager.findFragmentById(R.id.fragment_holder)
         (fragment as? ConfigurationFragment)?.refreshProfileState()
-    }
-
-    fun driveBottomBar(scrollDy: Int) {
-        // 搜索模式下不驱动流量条显示/隐藏，避免点击搜索误拉起实时上下行面板
-        if (searchModeActive) return
-        binding.stats.onListScrolled(scrollDy)
-    }
-
-    private var searchModeActive = false
-
-    fun setSearchActive(active: Boolean) {
-        if (searchModeActive == active) return
-        searchModeActive = active
-        // 搜索模式：强制隐藏实时上下行面板，禁止任何路径再次拉起
-        binding.stats.forceHidden = active
-        binding.stats.syncMainControls(
-            currentMainFragment is ConfigurationFragment,
-            DataStore.serviceState,
-            showWhenConnected = !active && DataStore.serviceState == BaseService.State.Connected,
-            animate = false,
-        )
     }
 
     fun displayFragmentWithId(@IdRes id: Int): Boolean {
@@ -482,12 +438,25 @@ class MainActivity : ThemedActivity(),
         DataStore.serviceState = state
         refreshConfigurationProfileState()
 
-        binding.fab.changeState(state, DataStore.serviceState, animate)
-        binding.stats.changeState(state)
-        syncMainControls(
-            showWhenConnected = state == BaseService.State.Connected,
-            animate = animateControls,
-        )
+        binding.fab.changeState(state)
+        syncMainControls(animate = animateControls)
+        if (state == BaseService.State.Connected) {
+            // 连接成功后自动进行一次 URL 测试，悬浮胶囊显示实时延迟
+            binding.fab.setLatency(null)
+            runOnDefaultDispatcher {
+                val elapsed = try {
+                    urlTest()
+                } catch (e: Exception) {
+                    Logs.w(e.toString())
+                    -1
+                }
+                onMainDispatcher {
+                    if (DataStore.serviceState == BaseService.State.Connected) {
+                        binding.fab.setLatency(if (elapsed >= 0) elapsed else null)
+                    }
+                }
+            }
+        }
         if (msg != null) snackbar(getString(R.string.vpn_error, msg)).show()
     }
 
@@ -526,7 +495,7 @@ class MainActivity : ThemedActivity(),
     // may NOT called when app is in background
     // ONLY do UI update here, write DB in bg process
     override fun cbSpeedUpdate(stats: SpeedDisplayData) {
-        binding.stats.updateSpeed(stats.txRateProxy, stats.rxRateProxy)
+        binding.fab.updateSpeed(stats.txRateProxy, stats.rxRateProxy)
     }
 
     override suspend fun cbTrafficUpdate(data: TrafficDataBatch) {
@@ -547,10 +516,7 @@ class MainActivity : ThemedActivity(),
     override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String) {
         when (key) {
             Key.SERVICE_MODE -> onBinderDied()
-            Key.SHOW_BOTTOM_BAR -> syncMainControls(
-                showWhenConnected = DataStore.showBottomBar,
-                animate = true,
-            )
+            Key.SHOW_BOTTOM_BAR -> syncMainControls(animate = true)
             Key.PROXY_APPS, Key.BYPASS_MODE, Key.INDIVIDUAL -> {
                 if (DataStore.serviceState.canStop) {
                     snackbar(getString(R.string.need_reload)).setAction(R.string.apply) {

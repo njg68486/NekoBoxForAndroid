@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_locate_group"
+        android:icon="@drawable/ic_locate_group_24"
+        android:title="@string/locate_current_group"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/action_update_all"
         android:icon="@drawable/ic_baseline_update_24"
         android:title="@string/update_all_subscription"
