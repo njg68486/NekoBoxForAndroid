@@ -112,18 +112,136 @@
             app:cardElevation="8dp"
             app:strokeWidth="0dp">
 
-            <com.google.android.material.bottomnavigation.BottomNavigationView
-                android:id="@+id/bottom_nav"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp"
-                app:itemActiveIndicatorStyle="@style/Widget.SagerNet.BottomNav.ActiveIndicator"
-                app:itemIconTint="@color/nav_icon_tint"
-                app:itemTextColor="@color/nav_icon_tint"
-                app:labelVisibilityMode="labeled"
-                app:menu="@menu/bottom_nav_menu" />
+                android:orientation="horizontal"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <!-- 配置 -->
+                <LinearLayout
+                    android:id="@+id/tab_configuration"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_nav_tab"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <ImageView
+                        android:id="@+id/tab_configuration_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@string/menu_configuration"
+                        app:srcCompat="@drawable/ic_action_description"
+                        app:tint="@color/nav_tab_tint" />
+
+                    <TextView
+                        android:id="@+id/tab_configuration_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/menu_configuration"
+                        android:textColor="@color/nav_tab_tint"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 分组 -->
+                <LinearLayout
+                    android:id="@+id/tab_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_nav_tab"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <ImageView
+                        android:id="@+id/tab_group_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@string/menu_group"
+                        app:srcCompat="@drawable/ic_baseline_view_list_24"
+                        app:tint="@color/nav_tab_tint" />
+
+                    <TextView
+                        android:id="@+id/tab_group_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/menu_group"
+                        android:textColor="@color/nav_tab_tint"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 分流 -->
+                <LinearLayout
+                    android:id="@+id/tab_route"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_nav_tab"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <ImageView
+                        android:id="@+id/tab_route_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@string/menu_route"
+                        app:srcCompat="@drawable/ic_maps_directions"
+                        app:tint="@color/nav_tab_tint" />
+
+                    <TextView
+                        android:id="@+id/tab_route_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/menu_route"
+                        android:textColor="@color/nav_tab_tint"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 设置 -->
+                <LinearLayout
+                    android:id="@+id/tab_settings"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_nav_tab"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <ImageView
+                        android:id="@+id/tab_settings_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@string/settings"
+                        app:srcCompat="@drawable/ic_action_settings"
+                        app:tint="@color/nav_tab_tint" />
+
+                    <TextView
+                        android:id="@+id/tab_settings_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/settings"
+                        android:textColor="@color/nav_tab_tint"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+            </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 

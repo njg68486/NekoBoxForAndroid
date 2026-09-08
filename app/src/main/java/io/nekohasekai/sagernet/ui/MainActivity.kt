@@ -17,7 +17,6 @@ import androidx.annotation.IdRes
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceDataStore
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import io.nekohasekai.sagernet.BuildConfig
@@ -68,10 +67,7 @@ class MainActivity : ThemedActivity(),
 
         binding = LayoutMainBinding.inflate(layoutInflater)
         binding.fab.initProgress(binding.fabProgress)
-        binding.bottomNav.setOnItemSelectedListener { item ->
-            displayFragmentWithId(item.itemId)
-            true
-        }
+        setupBottomNavTabs()
 
         if (savedInstanceState == null) {
             displayFragmentWithId(R.id.nav_configuration)
@@ -427,18 +423,35 @@ class MainActivity : ThemedActivity(),
         return true
     }
 
+    private fun setupBottomNavTabs() {
+        binding.tabConfiguration.setOnClickListener {
+            displayFragmentWithId(R.id.nav_configuration)
+        }
+        binding.tabGroup.setOnClickListener {
+            displayFragmentWithId(R.id.nav_group)
+        }
+        binding.tabRoute.setOnClickListener {
+            displayFragmentWithId(R.id.nav_route)
+        }
+        binding.tabSettings.setOnClickListener {
+            displayFragmentWithId(R.id.nav_settings)
+        }
+    }
+
     private fun selectBottomNavFor(@IdRes id: Int) {
-        val navItem = when (id) {
-            R.id.nav_configuration -> R.id.nav_configuration
-            R.id.nav_group -> R.id.nav_group
-            R.id.nav_route -> R.id.nav_route
+        val tabView: android.view.View? = when (id) {
+            R.id.nav_configuration -> binding.tabConfiguration
+            R.id.nav_group -> binding.tabGroup
+            R.id.nav_route -> binding.tabRoute
             R.id.nav_settings, R.id.nav_tools, R.id.nav_logcat, R.id.nav_about, R.id.nav_faq ->
-                R.id.nav_settings
-            else -> return
+                binding.tabSettings
+            else -> null
         }
-        if (binding.bottomNav.menu.findItem(navItem)?.isChecked != true) {
-            binding.bottomNav.menu.findItem(navItem)?.isChecked = true
-        }
+        tabView ?: return
+        binding.tabConfiguration.isSelected = (tabView === binding.tabConfiguration)
+        binding.tabGroup.isSelected = (tabView === binding.tabGroup)
+        binding.tabRoute.isSelected = (tabView === binding.tabRoute)
+        binding.tabSettings.isSelected = (tabView === binding.tabSettings)
     }
 
     private fun changeState(
