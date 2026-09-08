@@ -157,6 +157,10 @@ class ConfigurationFragment @JvmOverloads constructor(
     lateinit var tabLayout: TabLayout
     lateinit var groupPager: ViewPager2
 
+    // [分组/全局] 搜索模式切换。false = 分组(仅搜当前分组)，true = 全局(搜全部配置)
+    var isGlobalSearch: Boolean = false
+        private set
+
     val alwaysShowAddress by lazy { DataStore.alwaysShowAddress }
 
     @Volatile
@@ -302,11 +306,53 @@ class ConfigurationFragment @JvmOverloads constructor(
     }
 
     override fun onQueryTextChange(query: String): Boolean {
-        getCurrentGroupFragment()?.adapter?.filter(query)
+        if (isGlobalSearch) {
+            applyGlobalFilter(query)
+        } else {
+            getCurrentGroupFragment()?.adapter?.filter(query)
+        }
         return false
     }
 
     override fun onQueryTextSubmit(query: String): Boolean = false
+
+    private fun setupGlobalSearchToggle() {
+        val toggle = toolbar.findViewById<android.widget.TextView>(R.id.global_search_toggle)
+            ?: return
+        updateSearchToggleText(toggle)
+        toggle.setOnClickListener {
+            isGlobalSearch = !isGlobalSearch
+            updateSearchToggleText(toggle)
+            // 切换模式后，用当前搜索词重新过滤
+            val searchView = toolbar.findViewById<SearchView>(R.id.action_search)
+            val query = searchView?.query?.toString() ?: ""
+            if (query.isNotEmpty()) {
+                onQueryTextChange(query)
+            }
+        }
+    }
+
+    private fun updateSearchToggleText(toggle: android.widget.TextView) {
+        toggle.text = getString(
+            if (isGlobalSearch) R.string.search_scope_global else R.string.search_scope_group
+        )
+    }
+
+    private fun applyGlobalFilter(query: String) {
+        // 遍历所有分组，对每个分组的配置列表执行过滤
+        if (!::adapter.isInitialized) return
+        if (query.isEmpty()) {
+            adapter.groupFragments.values.forEach { it.adapter?.filter("") }
+            return
+        }
+        val lower = query.lowercase()
+        adapter.groupFragments.values.forEach { groupFragment ->
+            val configurationAdapter = groupFragment.adapter
+            if (configurationAdapter != null) {
+                configurationAdapter.filter(lower)
+            }
+        }
+    }
 
     @SuppressLint("DetachAndAttachSameFragment")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -350,6 +396,8 @@ class ConfigurationFragment @JvmOverloads constructor(
                 }
             }
         }
+
+        setupGlobalSearchToggle()
 
         groupPager = view.findViewById(R.id.group_pager)
         tabLayout = view.findViewById(R.id.group_tab)

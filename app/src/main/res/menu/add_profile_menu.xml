@@ -8,6 +8,12 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/action_global_search"
+        android:title="@string/search_scope_group"
+        app:actionLayout="@layout/view_global_search_toggle"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/action_add"
         android:icon="@drawable/ic_action_note_add"
         android:title="@string/add_profile"

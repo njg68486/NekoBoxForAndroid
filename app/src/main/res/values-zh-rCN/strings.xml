@@ -610,4 +610,14 @@
     <string name="snell_quic_proxy">QUIC Proxy 模式</string>
     <string name="snell_quic_proxy_summary">仅 v6：旧版 v5 QUIC Proxy 兼容</string>
     <string name="snell_reuse_summary">仅适用于 v4-v6</string>
+
+    <!-- NekoBox UI Redesign -->
+    <string name="menu_settings_hub">设置</string>
+    <string name="search_scope_group">分组</string>
+    <string name="search_scope_global">全局</string>
+    <string name="settings_hub_settings_desc">应用通用设置</string>
+    <string name="settings_hub_logcat_desc">查看与发送连接日志</string>
+    <string name="settings_hub_tools_desc">网络工具与备份</string>
+    <string name="settings_hub_docs_desc">关于、版本与帮助</string>
+    <string name="arrow_forward">进入</string>
 </resources>
