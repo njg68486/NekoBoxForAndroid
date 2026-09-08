@@ -11,6 +11,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 import android.text.format.Formatter
 import android.text.style.ForegroundColorSpan
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.Menu
@@ -323,27 +324,63 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     override fun onQueryTextSubmit(query: String): Boolean = false
 
-    private fun setupGlobalSearchToggle() {
-        val toggle = toolbar.findViewById<android.widget.TextView>(R.id.global_search_toggle)
-            ?: return
-        globalSearchToggle = toggle
+    private fun onSearchActivated(searchView: SearchView) {
+        (activity as? MainActivity)?.setSearchActive(true)
+        injectGlobalSearchToggle(searchView)
+    }
+
+    private fun onSearchDeactivated() {
+        removeGlobalSearchToggle()
+        (activity as? MainActivity)?.setSearchActive(false)
+    }
+
+    private fun findViewByEntryName(root: View, entryName: String): View? {
+        try {
+            if (root.id != View.NO_ID &&
+                root.resources.getResourceEntryName(root.id) == entryName
+            ) return root
+        } catch (e: Exception) {
+        }
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) {
+                findViewByEntryName(root.getChildAt(i), entryName)?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private fun injectGlobalSearchToggle(searchView: SearchView) {
+        if (globalSearchToggle?.parent != null) return
+        val closeBtn = findViewByEntryName(searchView, "search_close_btn") ?: return
+        val plate = closeBtn.parent as? ViewGroup ?: return
+        val toggle = globalSearchToggle
+            ?: layoutInflater.inflate(R.layout.view_global_search_toggle, plate, false)
+                as android.widget.TextView
         updateSearchToggleText(toggle)
         toggle.setOnClickListener {
             isGlobalSearch = !isGlobalSearch
             updateSearchToggleText(toggle)
             // 切换模式后，用当前搜索词重新过滤
-            val searchView = toolbar.findViewById<SearchView>(R.id.action_search)
-            val query = searchView?.query?.toString() ?: ""
+            val query = searchView.query?.toString() ?: ""
             if (query.isNotEmpty()) {
                 onQueryTextChange(query)
             }
         }
-        // 默认隐藏，仅在搜索框展开时显示
-        setGlobalSearchToggleVisible(false)
+        val lp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        lp.gravity = Gravity.CENTER_VERTICAL
+        lp.marginStart = dp2px(4)
+        // 距离 X（取消搜索按钮）保留约四个空格的间距
+        lp.marginEnd = dp2px(8)
+        plate.addView(toggle, plate.indexOfChild(closeBtn), lp)
+        globalSearchToggle = toggle
     }
 
-    private fun setGlobalSearchToggleVisible(visible: Boolean) {
-        globalSearchToggle?.visibility = if (visible) View.VISIBLE else View.GONE
+    private fun removeGlobalSearchToggle() {
+        globalSearchToggle?.let { toggle ->
+            (toggle.parent as? ViewGroup)?.removeView(toggle)
+        }
     }
 
     private fun updateSearchToggleText(toggle: android.widget.TextView) {
@@ -406,28 +443,21 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
-                    // 搜索框获得焦点即显示切换按钮（覆盖所有展开路径）
-                    setGlobalSearchToggleVisible(true)
-                    (activity as? MainActivity)?.setSearchActive(true)
+                    onSearchActivated(searchView)
                 } else {
                     cancelSearch(searchView)
-                    setGlobalSearchToggleVisible(false)
-                    (activity as? MainActivity)?.setSearchActive(false)
+                    onSearchDeactivated()
                 }
             }
-            // 搜索框展开/收起时同步切换按钮可见性，并避免拉起流量面板
+            // 搜索展开：注入[分组/全局]切换按钮（X左侧）并隐藏实时上下行面板
             searchView.setOnSearchClickListener {
-                setGlobalSearchToggleVisible(true)
-                (activity as? MainActivity)?.setSearchActive(true)
+                onSearchActivated(searchView)
             }
             searchView.setOnCloseListener {
-                setGlobalSearchToggleVisible(false)
-                (activity as? MainActivity)?.setSearchActive(false)
+                onSearchDeactivated()
                 false
             }
         }
-
-        setupGlobalSearchToggle()
 
         groupPager = view.findViewById(R.id.group_pager)
         tabLayout = view.findViewById(R.id.group_tab)

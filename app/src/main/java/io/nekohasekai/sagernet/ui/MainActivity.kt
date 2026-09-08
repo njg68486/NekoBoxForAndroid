@@ -408,23 +408,14 @@ class MainActivity : ThemedActivity(),
     fun setSearchActive(active: Boolean) {
         if (searchModeActive == active) return
         searchModeActive = active
-        if (active) {
-            // 搜索时隐藏实时上下行面板
-            binding.stats.syncMainControls(
-                currentMainFragment is ConfigurationFragment,
-                DataStore.serviceState,
-                showWhenConnected = false,
-                animate = false,
-            )
-        } else {
-            // 退出搜索，恢复正常的连接显示逻辑
-            binding.stats.syncMainControls(
-                currentMainFragment is ConfigurationFragment,
-                DataStore.serviceState,
-                showWhenConnected = DataStore.serviceState == BaseService.State.Connected,
-                animate = false,
-            )
-        }
+        // 搜索模式：强制隐藏实时上下行面板，禁止任何路径再次拉起
+        binding.stats.forceHidden = active
+        binding.stats.syncMainControls(
+            currentMainFragment is ConfigurationFragment,
+            DataStore.serviceState,
+            showWhenConnected = !active && DataStore.serviceState == BaseService.State.Connected,
+            animate = false,
+        )
     }
 
     fun displayFragmentWithId(@IdRes id: Int): Boolean {

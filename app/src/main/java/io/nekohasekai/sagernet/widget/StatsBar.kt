@@ -68,6 +68,16 @@ class StatsBar @JvmOverloads constructor(
             updateHideOnScroll()
         }
 
+    /**
+     * 搜索模式强制隐藏：为 true 时任何路径（连接状态变化/滚动/延迟任务）都不允许拉起面板
+     */
+    var forceHidden = false
+        set(value) {
+            if (field == value) return
+            field = value
+            updateHideOnScroll()
+        }
+
     init {
         alpha = 0f
     }
@@ -133,7 +143,7 @@ class StatsBar @JvmOverloads constructor(
     }
 
     private fun shouldShow(): Boolean {
-        return allowShow && currentState == BaseService.State.Connected
+        return allowShow && currentState == BaseService.State.Connected && !forceHidden
     }
 
     private fun resetScrollDriverState() {
@@ -179,7 +189,7 @@ class StatsBar @JvmOverloads constructor(
         currentState = state
         allowShow = showControls
         when {
-            !showControls || state != BaseService.State.Connected -> {
+            !showControls || state != BaseService.State.Connected || forceHidden -> {
                 applyTransition(
                     if (animate && showControls) Transition.HideAfterStart else Transition.HideImmediate
                 )

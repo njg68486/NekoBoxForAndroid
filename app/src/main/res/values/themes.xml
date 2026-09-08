@@ -170,6 +170,14 @@
         <item name="cardBackgroundColor">?attr/cardElevatedSurfaceColor</item>
     </style>
 
+    <!-- GroupItem: 分组页配置卡片，16dp 大圆角 + 底色悬浮（日间 #F5F5F5 / 夜间 #1E1E1E），无阴影无描边 -->
+    <style name="Widget.SagerNet.CardView.GroupItem">
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardBackgroundColor">@color/pref_card_background</item>
+    </style>
+
     <style name="Widget.SagerNet.CardView.Tinted" parent="Widget.SagerNet.CardView">
         <item name="cardBackgroundColor">?attr/cardElevatedSurfaceColor</item>
     </style>
