@@ -11,7 +11,7 @@
         android:id="@+id/action_search"
         android:title="@android:string/search_go"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
-        app:showAsAction="always|collapseActionView" />
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/action_misc"

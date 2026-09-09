@@ -535,29 +535,28 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
         }
 
-        val searchView = toolbar.findViewById<SearchView>(R.id.action_search)
+        // as? 安全转换：即使菜单结构变化(如懒加载 action view)也不会 ClassCastException
+        val searchView = toolbar.findViewById<View>(R.id.action_search) as? SearchView
         if (searchView != null) {
             searchView.setOnQueryTextListener(this)
             searchView.maxWidth = Int.MAX_VALUE
-            // 单击放大镜直接展开搜索栏：由菜单项 collapseActionView 驱动
-            // (expandActionView → setIconified(false)+requestFocus，一次点击完成)
 
             searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
-                if (hasFocus) {
-                    onSearchActivated(searchView)
-                } else {
-                    cancelSearch(searchView)
-                    onSearchDeactivated()
-                }
-            }
-            // 搜索展开：注入[分组/全局]切换按钮（X左侧）并隐藏实时上下行面板
-            searchView.setOnSearchClickListener {
+            if (hasFocus) {
                 onSearchActivated(searchView)
-            }
-            searchView.setOnCloseListener {
+            } else {
+                cancelSearch(searchView)
                 onSearchDeactivated()
-                false
             }
+        }
+        // 搜索展开：注入[分组/全局]切换按钮（X左侧）并隐藏实时上下行面板
+        searchView.setOnSearchClickListener {
+            onSearchActivated(searchView)
+        }
+        searchView.setOnCloseListener {
+            onSearchDeactivated()
+            false
+        }
         }
 
         groupPager = view.findViewById(R.id.group_pager)
