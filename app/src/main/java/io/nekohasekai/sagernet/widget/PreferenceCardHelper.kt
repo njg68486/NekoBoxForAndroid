@@ -8,6 +8,7 @@ import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceGroupAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.ktx.Logs
 
 /**
  * 设置界面分组圆角卡片化辅助类。
@@ -116,7 +117,26 @@ class PreferenceCardHelper(private val listView: RecyclerView) {
     /**
      * 挂载到 listView：数据变化和滚动时重新应用卡片背景。
      */
-    fun attach() {
+    fun attach(disableLibraryDivider: Boolean = true) {
+        if (disableLibraryDivider) {
+            // 关闭 androidx.preference 自带的 DividerDecoration：
+            // 分割线只允许出现在圆角卡片内部（卡片外不得有任何 nekobox 原生分割线）
+            // DividerDecoration 是 PreferenceFragmentCompat 的 private 字段，走反射移除
+            try {
+                val f = listView.javaClass.getSuperclass()
+                var c: Class<*>? = listView.javaClass
+                while (c != null && c != androidx.preference.PreferenceFragmentCompat::class.java) {
+                    c = c.superclass
+                }
+                c?.getDeclaredField("mDividerDecoration")?.let { field ->
+                    field.isAccessible = true
+                    val deco = field.get(listView) as? RecyclerView.ItemDecoration
+                    if (deco != null) listView.removeItemDecoration(deco)
+                }
+            } catch (e: Throwable) {
+                Logs.w("remove preference divider failed: ${e.message}")
+            }
+        }
         listView.post {
             listView.adapter?.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
                 override fun onChanged() = apply()

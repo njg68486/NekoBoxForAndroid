@@ -539,6 +539,8 @@ class ConfigurationFragment @JvmOverloads constructor(
         if (searchView != null) {
             searchView.setOnQueryTextListener(this)
             searchView.maxWidth = Int.MAX_VALUE
+            // 单击放大镜直接展开搜索栏（不再需要点击两次才进入搜索）
+            searchView.setIconifiedByDefault(false)
 
             searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {

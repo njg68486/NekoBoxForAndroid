@@ -4,7 +4,6 @@ import android.os.Binder
 import android.os.Build
 import androidx.preference.PreferenceDataStore
 import io.nekohasekai.sagernet.CONNECTION_TEST_URL
-import io.nekohasekai.sagernet.GroupType
 import io.nekohasekai.sagernet.IPv6Mode
 import io.nekohasekai.sagernet.Key
 import io.nekohasekai.sagernet.TunImplementation
@@ -82,10 +81,9 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     }
 
     fun selectedGroupForImport(): Long {
-        val current = currentGroup()
-        if (current.type == GroupType.BASIC) return current.id
-        val groups = SagerDatabase.groupDao.allGroups()
-        return groups.find { it.type == GroupType.BASIC }!!.id
+        // 导入目标 = 当前正在浏览/选定的分组（严格归属，不回退到基础分组）
+        // 修复：旧逻辑对订阅分组强制回退 BASIC，导致"分组2导入的节点跑进分组1"
+        return currentGroup().id
     }
 
     var appTLSVersion by configurationStore.string(Key.APP_TLS_VERSION)

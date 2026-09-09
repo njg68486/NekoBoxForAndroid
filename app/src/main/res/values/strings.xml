@@ -41,6 +41,7 @@
     <string name="sort_and_layout">Sort and Appearance</string>
     <string name="fab_latency">Latency: %d ms</string>
     <string name="fab_latency_none">Latency: -- ms</string>
+    <string name="fab_latency_testing">Latency: Testing…</string>
     <string name="locate_current_group">Locate current group</string>
     <string name="card_style">Card</string>
     <string name="card_style_classic">Classic</string>

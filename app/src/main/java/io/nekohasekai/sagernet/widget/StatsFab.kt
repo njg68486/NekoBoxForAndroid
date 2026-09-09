@@ -13,6 +13,7 @@ import android.widget.TextView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.bg.BaseService
+import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.ktx.getColour
 import kotlin.math.max
 import kotlin.math.min
@@ -60,15 +61,18 @@ class StatsFab @JvmOverloads constructor(
     private var widthAnimator: ValueAnimator? = null
     private var shown = true
 
+    /** 点击数据区执行当前连接节点的延迟测试（由 MainActivity 注入） */
+    var onLatencyTestListener: (() -> Unit)? = null
+
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         elevation = 6 * density
 
-        // 固定经典高亮蓝胶囊背景，圆角 = 高度/2
+        // 固定经典高亮蓝圆角方形背景（圆角 14dp，非圆形）
         val capsule = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = FAB_HEIGHT_DP / 2f * density
+            cornerRadius = 14f * density
             setColor(context.getColour(R.color.fab_background))
         }
         background = capsule
@@ -125,6 +129,20 @@ class StatsFab @JvmOverloads constructor(
         }
     }
 
+    /** 等待手动触发延迟测试（Waiting…），点击数据区触发 */
+    fun setLatencyTesting() {
+        latencyText.text = context.getString(R.string.fab_latency_testing)
+    }
+
+    /** 数据区(上下行/延迟三行区域)点击 = 测试当前连接节点延迟 */
+    override fun setOnClickListener(l: OnClickListener?) {
+        // 整体点击保留给启动/停止；数据区单独触发延迟测试
+        statsColumn.setOnClickListener {
+            if (DataStore.serviceState.connected) onLatencyTestListener?.invoke()
+        }
+        super.setOnClickListener(l)
+    }
+
     /** 十进制单位速率格式化：xx.x B/KB/MB/GB */
     private fun formatSpeed(bytesPerSec: Long): String {
         val kb = 1024.0
@@ -158,6 +176,7 @@ class StatsFab @JvmOverloads constructor(
             BaseService.State.Connecting -> {
                 iconView.visibility = View.GONE
                 progress.visibility = View.VISIBLE
+                setLatency(null)
                 collapse()
             }
 

@@ -92,6 +92,9 @@ class MainActivity : ThemedActivity(),
                 null
             )
         }
+        // 点击展开后的数据区(上下行/延迟) = 测试当前连接节点的 HTTP 延迟
+        // (对齐原版 StatsBar: binding.stats.setOnClickListener { testConnection() })
+        binding.fab.onLatencyTestListener = { testConnection() }
         setContentView(binding.root)
         currentMainFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment
@@ -194,6 +197,25 @@ class MainActivity : ThemedActivity(),
             error("not started")
         }
         return connection.service!!.urlTest()
+    }
+
+    /** 手动触发当前连接节点的延迟测试，结果刷新到悬浮胶囊数据区（原版 StatsBar 语义） */
+    internal fun testConnection() {
+        if (!DataStore.serviceState.connected) return
+        binding.fab.setLatencyTesting()
+        runOnDefaultDispatcher {
+            val elapsed = try {
+                urlTest()
+            } catch (e: Exception) {
+                Logs.w(e.toString())
+                -1
+            }
+            onMainDispatcher {
+                if (DataStore.serviceState == BaseService.State.Connected) {
+                    binding.fab.setLatency(if (elapsed >= 0) elapsed else null)
+                }
+            }
+        }
     }
 
     suspend fun importSubscription(uri: Uri) {
@@ -495,6 +517,7 @@ class MainActivity : ThemedActivity(),
     // may NOT called when app is in background
     // ONLY do UI update here, write DB in bg process
     override fun cbSpeedUpdate(stats: SpeedDisplayData) {
+        // ▼ 下行 = rxRateProxy；▲ 上行 = txRateProxy（此前传反导致两行数值不变/互相错位）
         binding.fab.updateSpeed(stats.txRateProxy, stats.rxRateProxy)
     }
 
