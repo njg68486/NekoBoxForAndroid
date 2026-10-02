@@ -99,7 +99,8 @@ internal class TopBarController(
     /** 七个控件的固定顺序 */
     private val order = ArrayList<View>(7)
 
-    private var searchField: SearchView? = null
+    var searchField: SearchView? = null
+        private set
     private var searchExpanded = false
 
     private var callbacks: Callbacks = Noop

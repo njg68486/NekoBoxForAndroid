@@ -380,33 +380,95 @@ class ConfigurationFragment @JvmOverloads constructor(
      * 按当前搜索范围过滤。
      *
      * - 分组：只过滤当前分组页
-     * - 全局：跨所有分组，过滤后切到第一个有命中的分组
+     * - 全局：跨所有分组逐页过滤，但【绝不自动跳转分组】，保持官方行为
+     *
+     * 同时统计当前匹配到的节点总数，联动 [删除] 按钮从 [分组/全局] 背后滑出或缩回。
      */
     private fun onSearchQueryChanged(query: String) {
-        if (searchScope.current == SearchScopeController.Scope.GROUP) {
-            getCurrentGroupFragment()?.adapter?.filter(query)
-            return
-        }
-
-        // 全局：逐页过滤，落到第一个有命中的分组
-        val pages = groupPager.adapter?.itemCount ?: return
-
-        if (query.isBlank()) {
-            for (i in 0 until pages) {
-                adapter.getGroupFragment(i)?.adapter?.filter("")
+        val totalHits = if (searchScope.current == SearchScopeController.Scope.GROUP) {
+            val a = getCurrentGroupFragment()?.adapter
+            a?.filter(query)
+            if (query.isBlank()) 0 else (a?.configurationIdList?.size ?: 0)
+        } else {
+            val pages = groupPager.adapter?.itemCount ?: 0
+            if (query.isBlank()) {
+                for (i in 0 until pages) {
+                    adapter.getGroupFragment(i)?.adapter?.filter("")
+                }
+                0
+            } else {
+                var hits = 0
+                for (i in 0 until pages) {
+                    val a = adapter.getGroupFragment(i)?.adapter ?: continue
+                    a.filter(query)
+                    hits += a.configurationIdList.size
+                }
+                hits
             }
-            return
         }
 
-        var firstHit = -1
-        for (i in 0 until pages) {
-            val a = adapter.getGroupFragment(i)?.adapter ?: continue
-            a.filter(query)
-            if (firstHit < 0 && a.itemCount > 0) firstHit = i
+        // 有搜索词且命中了节点才滑出删除按钮，否则缩回去
+        searchScope.updateDeleteVisibility(query.isNotBlank() && totalHits > 0)
+    }
+
+    /** 批量删除当前搜索匹配出的所有节点 */
+    private fun deleteCurrentSearchResults() {
+        val query = topBar.searchField?.query?.toString().orEmpty()
+        if (query.isBlank()) return
+
+        // 收集所有匹配到的节点
+        val toDelete = mutableListOf<ProxyEntity>()
+        if (searchScope.current == SearchScopeController.Scope.GROUP) {
+            val a = getCurrentGroupFragment()?.adapter
+            if (a != null) {
+                for (id in a.configurationIdList) {
+                    val entity = a.configurationList[id]
+                    if (entity != null) toDelete.add(entity)
+                }
+            }
+        } else {
+            val pages = groupPager.adapter?.itemCount ?: 0
+            for (i in 0 until pages) {
+                val a = adapter.getGroupFragment(i)?.adapter ?: continue
+                for (id in a.configurationIdList) {
+                    val entity = a.configurationList[id]
+                    if (entity != null) toDelete.add(entity)
+                }
+            }
         }
-        if (firstHit >= 0 && firstHit != groupPager.currentItem) {
-            groupPager.setCurrentItem(firstHit, false)
-        }
+
+        if (toDelete.isEmpty()) return
+
+        val msg = getString(R.string.delete_confirm_prompt) + "\n" +
+                toDelete.take(10).joinToString("\n") { it.displayName().orEmpty() } +
+                if (toDelete.size > 10) "\n..." else ""
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.confirm)
+            .setMessage(msg)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                // 先从所有 adapter 中移除
+                for (profile in toDelete) {
+                    adapter.groupFragments[profile.groupId]?.adapter?.apply {
+                        val index = configurationIdList.indexOf(profile.id)
+                        if (index >= 0) {
+                            configurationIdList.removeAt(index)
+                            configurationList.remove(profile.id)
+                            notifyItemRemoved(index)
+                        }
+                    }
+                }
+                // 数据库真实删除
+                runOnDefaultDispatcher {
+                    for (profile in toDelete) {
+                        ProfileManager.deleteProfile2(profile.groupId, profile.id)
+                    }
+                }
+                // 删完后刷新搜索结果和删除按钮状态
+                onSearchQueryChanged(query)
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
     }
 
     @SuppressLint("DetachAndAttachSameFragment")
@@ -2710,9 +2772,15 @@ class ConfigurationFragment @JvmOverloads constructor(
     fun createSearchView(): SearchView = SearchView(requireContext()).apply {
         maxWidth = Int.MAX_VALUE
         setOnQueryTextListener(this@ConfigurationFragment)
-        searchScope.attach(this) { scope ->
-            onSearchQueryChanged(query?.toString().orEmpty())
-        }
+        searchScope.attach(
+            searchView = this,
+            onScopeChanged = { scope ->
+                onSearchQueryChanged(query?.toString().orEmpty())
+            },
+            onDeleteClicked = {
+                deleteCurrentSearchResults()
+            }
+        )
     }
 
     /** 收起搜索框时清空过滤状态 */
