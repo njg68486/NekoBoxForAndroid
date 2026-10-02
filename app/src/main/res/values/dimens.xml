@@ -1,0 +1,38 @@
+<resources>
+    <dimen name="qrcode_size">264dp</dimen>
+    <dimen name="main_list_padding_bottom">88dp</dimen>
+    <dimen name="bottom_sheet_padding">8dp</dimen>
+
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_elevation">1dp</dimen>
+    <dimen name="card_stroke_width">1dp</dimen>
+    <dimen name="card_stroke_width_selected">2dp</dimen>
+    <dimen name="profile_card_corner_radius">10dp</dimen>
+    <dimen name="profile_card_selected_bar_width">5dp</dimen>
+    <dimen name="profile_card_elevation_classic">2dp</dimen>
+
+    <dimen name="input_corner_radius">12dp</dimen>
+    <!-- 分组卡片左滑展开的「删除」按钮 -->
+    <dimen name="group_delete_reveal_width">96dp</dimen>
+    <dimen name="group_delete_corner">8dp</dimen>
+
+    <!--
+        顶栏「连体按钮」的统一尺寸。
+        [默认｜排序]（代码建）与 [取消｜删除]（layout_appbar_group.xml）**共用**
+        这三个值 —— 之前两边各写各的（32dp/36dp、56dp/64dp、12dp/14dp），
+        滑出来一看就是一高一矮一长一短。改这里就两边一起变，不会再走偏。
+        取值偏紧凑：格内左右各 8dp，所以分隔线两侧一共 16dp，不显空。
+    -->
+    <dimen name="topbar_segment_height">32dp</dimen>
+    <dimen name="topbar_segment_cell_min_width">48dp</dimen>
+    <dimen name="topbar_segment_cell_padding_h">8dp</dimen>
+
+    <dimen name="popup_corner_radius">12dp</dimen>
+    <dimen name="dialog_corner_radius">24dp</dimen>
+    <dimen name="dialog_background_inset">24dp</dimen>
+
+    <dimen name="nav_item_corner_radius">14dp</dimen>
+    <dimen name="button_corner_radius">12dp</dimen>
+
+    <dimen name="mtrl_snackbar_background_corner_radius">12dp</dimen>
+</resources>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ☷ 自定义排序按钮。
+
+    按 U+2637（坤/地）的真实卦形画：三根都是断线（中间断开）。
+    用 DejaVu 的 U+2630..U+2637 逐像素核对过：
+        ☰ 三实
+        ☴ 上二实 + 下断   ← 顶栏那枚
+        ☷ 三断           ← 就是它
+    线条位置/粗细/断口与 ic_topbar_group.xml(☴) 完全一致，同一族观感。
+
+    着色与同卡片上的 ✏️/⋮ 一致：tint 走 ?attr/colorControlNormal。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M4,6h6v2H4zM14,6h6v2H14zM4,11h6v2H4zM14,11h6v2H14zM4,16h6v2H4zM14,16h6v2H14z" />
+</vector>

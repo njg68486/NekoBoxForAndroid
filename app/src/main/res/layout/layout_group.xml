@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!--
+            分组界面专用顶栏。
+            批量操作条 [取消｜删除] 现在住在顶栏里面（layout_appbar_group.xml），
+            不再挂在这个 CoordinatorLayout 上 —— 之前用 layout_anchor="@id/appbar"
+            + anchorGravity=top|end 定位，锚点取的是 AppBarLayout 的**顶边**，
+            而避开状态栏的高度是加在 AppBarLayout 的 padding 上的，
+            顶边仍在屏幕最顶端，所以整条按钮跑到了状态栏上面（错位 + 显得巨大）。
+        -->
+        <include
+            layout="@layout/layout_appbar_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
+            android:id="@+id/group_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="4dp"
+            android:scrollbarSize="0dp"
+            app:fastScrollAutoHide="true"
+            app:fastScrollThumbColor="?colorPrimary"
+            app:fastScrollThumbInactiveColor="?colorPrimary">
+
+        </com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

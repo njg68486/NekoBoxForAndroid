@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    顶栏「连体按钮」的背景：圆角长方形。
+    [取消｜删除] 与 [默认｜排序] 共用这一个。
+
+    这只是布局里的**初始占位** —— 代码里 topbarSegmentBackground() 会
+    重新设一份（因为 ?attr/colorControlNormal 要在 Toolbar 的 actionBarTheme
+    下解析才准，普通 context 解析到的是深色）。两处配色一致：
+
+        solid  = ?attr/colorControlNormal 上 22% 透明
+                 → 与顶栏那排图标同源的前景色（深色顶栏下是白），
+                   所以按钮与图标永远同色系
+        stroke = @color/segment_stroke
+                 → 日间 #4D000000（黑）/ 夜间 #4DFFFFFF（白）
+
+    格与格之间的分隔线由代码用 1dp View 画（颜色同样是 segment_stroke）——
+    LinearLayout 的 dividerDrawable / showDividers 是 API 29+，
+    本项目 minSdk = 21，不能用。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="@dimen/group_delete_corner" />
+    <solid android:color="@color/segment_fill" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/segment_stroke" />
+</shape>

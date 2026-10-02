@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  抽屉图标：☴ 样式 —— 三条横线，从上到下依次变短。
+  官方 ic_navigation_menu 是三条等长横线，这里按要求改为递减长度。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24.0"
+    android:viewportHeight="24.0"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,6h18v2L3,8zM3,11h13v2L3,13zM3,16h8v2L3,18z" />
+</vector>

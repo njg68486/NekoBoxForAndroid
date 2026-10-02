@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ⊙ 跳转分组。
+    自绘矢量，不用 "⊙"(U+2299) 文字：几何符号在多数字体里 regular/bold
+    几乎没差别，设了 BOLD 也看不出加粗。这里外环描边 2.8 + 实心圆心，
+    粗细自己定，视觉上就是加粗的 ⊙。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="2.8"
+        android:pathData="M12,4.2 a7.8,7.8 0 1,1 0,15.6 a7.8,7.8 0 1,1 0,-15.6 Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,9.4 a2.6,2.6 0 1,1 0,5.2 a2.6,2.6 0 1,1 0,-5.2 Z" />
+</vector>

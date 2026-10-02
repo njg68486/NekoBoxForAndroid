@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    顶栏连体按钮的**占位**填充色（代码里 topbarSegmentBackground() 会重设一份）。
+
+    用 ?attr/colorControlNormal —— 顶栏 actionBarTheme 下的前景色，
+    与那排图标（☰ ⊙ ☴ 🔍 📄+ ⋮）同源，上 22% 透明。
+
+    为什么代码还要重设：布局 inflate 时的 context 未必带 actionBarTheme，
+    解析出来可能是深色；真正挂在 Toolbar 上之后再用 toolbar.context 解析才准。
+
+    **主题驱动**，不是固定色。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/colorControlNormal" android:alpha="0.22" />
+</selector>

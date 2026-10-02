@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/content"
+    style="@style/Widget.SagerNet.CardView.Elevated"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="bottom"
+        android:orientation="vertical">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/subscription_update_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:indicatorColor="?colorPrimary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:paddingStart="15dp"
+                android:paddingTop="15dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:id="@+id/group_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textStyle="bold"
+                    tools:text="@string/group_name" />
+
+                <TextView
+                    android:id="@+id/group_user"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="user name" />
+            </LinearLayout>
+
+            <!--
+                排序按钮 ☷（在 ✏️ 左边）。
+                按住 ☷ 拖动 = 立刻开始自定义排序，跟「长按卡片再拖」是同一套拖动。
+
+                为什么用 TouchListener 而不是 ClickListener：
+                那样得先抬手才触发，就成了「点一下、松手、再拖」。这里直接吃下
+                ACTION_DOWN 交给 ItemTouchHelper.startDrag()，手指不移开就一直是
+                按住状态，往后一拖就是拖动，手感与长按完全一致。
+                详见 GroupFragment.GroupHolder#bind 里的注释。
+
+                属性与 ✏️/⋮ 保持一致（12dp 内边距、top 对齐），三个按钮同高。
+            -->
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/group_sort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/group_order"
+                android:focusable="false"
+                android:padding="12dp"
+                app:srcCompat="@drawable/ic_group_sort" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/edit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/edit"
+                android:focusable="true"
+                android:padding="12dp"
+                app:srcCompat="@drawable/ic_image_edit" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/options"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:focusable="true"
+                android:nextFocusLeft="@+id/container"
+                android:padding="12dp"
+                app:srcCompat="@drawable/ic_baseline_more_vert_24" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:layout_marginBottom="4dp"
+            android:gravity="bottom">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_weight="1"
+                android:gravity="bottom"
+                android:orientation="vertical"
+                android:paddingStart="12.5dp"
+                android:paddingTop="8dp">
+
+                <TextView
+                    android:id="@+id/group_traffic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?android:textColorSecondary"
+                    android:visibility="gone"
+                    tools:text="@string/subscription_traffic" />
+
+                <TextView
+                    android:id="@+id/group_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?android:textColorSecondary"
+                    tools:text="@string/group_status_empty" />
+
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/group_update"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/group_update"
+                android:textColor="?android:textColorSecondary" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!--
+        左滑展开的「删除」按钮。
+
+        它是「覆盖层」而不是上面那排的兄弟节点 —— 宽度要能独立伸缩，
+        不能把分组名/☷/✏️/⋮ 挤动。所以直接挂在 MaterialCardView
+        （本身就是 FrameLayout）下，用 layout_gravity 定位到右上角。
+
+        初始宽度就是满宽（@dimen/group_delete_reveal_width = 96dp = ⋮48 + ✏️48，
+        正好覆盖到铅笔的位置），靠 translationX 整块移出卡片右边缘来「收起」，
+        所以宽度全程不变 —— 改宽度的做法会让「删除」二字在窄的时候折成竖排。
+    -->
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/group_delete"
+        android:layout_width="@dimen/group_delete_reveal_width"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:background="@drawable/bg_group_delete"
+        android:clickable="true"
+        android:focusable="false"
+        android:gravity="center">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="@null"
+            android:tint="?android:attr/textColorPrimary"
+            app:srcCompat="@drawable/ic_group_delete" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:text="@string/delete"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="14sp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ☴ 分组快速列表。
+    按 U+2634（巽/风）的真实卦形画：
+        上：实线      中：实线      下：断线（中间断开成两段）
+    把 DejaVu 的 U+2630..U+2637 逐一渲染出来核对过：☴ = 两实一断，
+    断的是最下面那条，不是「一条短横线」。
+
+    项目旧的 ic_neko_group 画的是「两条等长 + 一条短的」，读起来像缩进
+    层级，不是 ☴ —— 这就是之前顶栏上那枚图标看着不对的原因。
+    与其它顶栏图标同一样板：纯白填充、不写 android:tint。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M4,6h16v2H4zM4,11h16v2H4zM4,16h6v2H4zM14,16h6v2H14z" />
+</vector>

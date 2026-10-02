@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    分组界面的顶栏：与通用 layout_appbar.xml 结构一致，只是把 Toolbar 套进
+    一层 FrameLayout，好让批量操作条 [取消｜删除] 能**盖在**顶栏右侧那两个
+    图标按钮上面滑出来。
+
+    为什么不再用 CoordinatorLayout 的 layout_anchor：
+    锚点算的是 AppBarLayout 的顶边，而「避开状态栏」的高度是加在 AppBarLayout
+    的 padding 上的 —— 顶边仍在屏幕最顶端，于是整条 [取消｜删除] 跑到状态栏
+    上去了（之前"错位 + 尺寸异常"的根因）。放进 Toolbar 同一层之后，位置完全
+    由布局决定，跟状态栏高度无关。
+-->
+<com.google.android.material.appbar.AppBarLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/appbar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/colorPrimary"
+    app:elevation="0dp"
+    app:liftOnScroll="false">
+
+    <!--
+        高度必须写死成 actionBarSize：AppBarLayout 本身是 wrap_content，
+        里面若放 match_parent 的子 View，会被量成整屏高。
+    -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/colorPrimary"
+            android:theme="?actionBarTheme"
+            android:touchscreenBlocksFocus="false"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.DayNight"
+            app:title="@string/app_name" />
+
+        <!--
+            批量操作条：[取消｜删除]。
+            高度走 @dimen/topbar_segment_height；每格的样式（13sp / 48dp / 8dp /
+            前景色 / 涟漪）**不写在这里** —— 由 GroupFragment.applySegmentCellStyle
+            统一设置，与左边 [默认｜排序] 是同一个函数、同一套参数，杜绝再次跑偏。
+            竖直居中、贴右；初始 invisible，由代码把 translationX 设成自身宽度滑出去。
+        -->
+        <LinearLayout
+            android:id="@+id/batch_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/topbar_segment_height"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_topbar_segment"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="invisible">
+
+            <TextView
+                android:id="@+id/batch_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@android:string/cancel" />
+
+            <!--
+                分隔线用显式 1dp View，不用 LinearLayout 的 dividerDrawable /
+                showDividers —— 那两个属性是 API 29 才有的，本项目 minSdk = 21。
+            -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/segment_stroke" />
+
+            <TextView
+                android:id="@+id/batch_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/delete" />
+        </LinearLayout>
+    </FrameLayout>
+</com.google.android.material.appbar.AppBarLayout>

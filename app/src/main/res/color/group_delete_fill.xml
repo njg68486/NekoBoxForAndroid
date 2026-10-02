@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    **配置卡片左滑「删除」按钮**的填充色。
+
+    = ?attr/colorPrimary，**实色（不叠透明度）**。
+    用户明确要求：左滑出来的删除按钮要用主题色，不要半透明的淡色底。
+    所以这里给 alpha=1，整个按钮就是一块实打实的主题色。
+
+    底下的卡片是卡片表面色（colorSurface），实色主题色压上去边界很清楚。
+    按钮上的文字与图标走 ?android:attr/textColorPrimary ——
+    和顶栏图标同一套前景色逻辑，在主题色底上始终可读（日间黑 / 夜间白）。
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/colorPrimary" android:alpha="1.0" />
+</selector>

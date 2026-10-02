@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    配置卡片左滑展开的「删除」按钮背景。
+
+    配色**主题驱动**（不再是固定粉色）：
+        solid  = @color/group_delete_fill  → ?attr/colorPrimary **实色**
+                                             （res/color/group_delete_fill.xml）
+        stroke = @color/segment_stroke     → 日间 #4D000000（黑）/ 夜间 #4DFFFFFF（白）
+
+    圆角：只有右上角用卡片的圆角（@dimen/card_corner_radius，16dp）。
+    这个按钮是贴着卡片右上角的覆盖层 —— 顶边、右边要与卡片描边重合，
+    右上角也必须走卡片那条 16dp 的弧，否则按钮自己的小弧会把卡片
+    原本的圆弧盖掉，看起来右上角「缺了一块描边」。
+    其余三个角都在卡片内部，用小圆角即可。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners
+        android:topLeftRadius="@dimen/group_delete_corner"
+        android:topRightRadius="@dimen/card_corner_radius"
+        android:bottomRightRadius="@dimen/group_delete_corner"
+        android:bottomLeftRadius="@dimen/group_delete_corner" />
+    <solid android:color="@color/group_delete_fill" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/segment_stroke" />
+</shape>

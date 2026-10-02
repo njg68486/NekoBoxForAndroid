@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    顶栏自绘图标的统一样板：
+    24dp / viewport 24 / fillColor 纯白 / **不写 android:tint**。
+    着色一律在代码里 setColorFilter() 完成。
+    原因：带 ?attr/colorControlNormal 的 tint 要按主题解析，用 activity
+    context 手动 setImageResource 时这条链路不可靠（实测顶栏上出现过
+    「占位可见、图标不画」的情况），去掉这个变量最省心。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M3,6h18v2L3,8zM3,11h13v2L3,13zM3,16h8v2L3,18z" />
+</vector>
