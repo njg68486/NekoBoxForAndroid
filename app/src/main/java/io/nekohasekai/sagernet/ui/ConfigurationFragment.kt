@@ -335,7 +335,10 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     fun getCurrentGroupFragment(): GroupFragment? {
         return try {
-            childFragmentManager.findFragmentByTag("f" + DataStore.selectedGroup) as GroupFragment?
+            val byTag = childFragmentManager.findFragmentByTag("f" + DataStore.selectedGroup) as? GroupFragment
+            if (byTag != null) return byTag
+            val currentIdx = if (::groupPager.isInitialized) groupPager.currentItem else -1
+            if (currentIdx >= 0 && ::adapter.isInitialized) adapter.getGroupFragment(currentIdx) else null
         } catch (e: Exception) {
             Logs.e(e)
             null
@@ -380,31 +383,20 @@ class ConfigurationFragment @JvmOverloads constructor(
      * 按当前搜索范围过滤。
      *
      * - 分组：只过滤当前分组页
-     * - 全局：跨所有分组逐页过滤，但【绝不自动跳转分组】，保持官方行为
+     * - 全局：全库搜索匹配的节点，并直接在当前可见列表展示出来（不跳转任何分组Tab，所有命中节点集中展示！）
      *
      * 同时统计当前匹配到的节点总数，联动 [删除] 按钮从 [分组/全局] 背后滑出或缩回。
      */
     private fun onSearchQueryChanged(query: String) {
         val totalHits = if (searchScope.current == SearchScopeController.Scope.GROUP) {
             val a = getCurrentGroupFragment()?.adapter
-            a?.filter(query)
+            a?.filter(query, global = false)
             if (query.isBlank()) 0 else (a?.configurationIdList?.size ?: 0)
         } else {
-            val pages = groupPager.adapter?.itemCount ?: 0
-            if (query.isBlank()) {
-                for (i in 0 until pages) {
-                    adapter.getGroupFragment(i)?.adapter?.filter("")
-                }
-                0
-            } else {
-                var hits = 0
-                for (i in 0 until pages) {
-                    val a = adapter.getGroupFragment(i)?.adapter ?: continue
-                    a.filter(query)
-                    hits += a.configurationIdList.size
-                }
-                hits
-            }
+            // 全局搜索：让当前正在看的分组列表直接展示全库匹配的所有节点！
+            val a = getCurrentGroupFragment()?.adapter
+            a?.filter(query, global = true)
+            if (query.isBlank()) 0 else (a?.configurationIdList?.size ?: 0)
         }
 
         // 有搜索词且命中了节点才滑出删除按钮，否则缩回去
@@ -416,26 +408,8 @@ class ConfigurationFragment @JvmOverloads constructor(
         val query = topBar.searchField?.query?.toString().orEmpty()
         if (query.isBlank()) return
 
-        // 收集所有匹配到的节点
-        val toDelete = mutableListOf<ProxyEntity>()
-        if (searchScope.current == SearchScopeController.Scope.GROUP) {
-            val a = getCurrentGroupFragment()?.adapter
-            if (a != null) {
-                for (id in a.configurationIdList) {
-                    val entity = a.configurationList[id]
-                    if (entity != null) toDelete.add(entity)
-                }
-            }
-        } else {
-            val pages = groupPager.adapter?.itemCount ?: 0
-            for (i in 0 until pages) {
-                val a = adapter.getGroupFragment(i)?.adapter ?: continue
-                for (id in a.configurationIdList) {
-                    val entity = a.configurationList[id]
-                    if (entity != null) toDelete.add(entity)
-                }
-            }
-        }
+        val a = getCurrentGroupFragment()?.adapter ?: return
+        val toDelete = a.configurationIdList.mapNotNull { a.configurationList[it] }
 
         if (toDelete.isEmpty()) return
 
@@ -447,15 +421,13 @@ class ConfigurationFragment @JvmOverloads constructor(
             .setTitle(R.string.confirm)
             .setMessage(msg)
             .setPositiveButton(R.string.yes) { _, _ ->
-                // 先从所有 adapter 中移除
+                // 先从当前 adapter 中移除
                 for (profile in toDelete) {
-                    adapter.groupFragments[profile.groupId]?.adapter?.apply {
-                        val index = configurationIdList.indexOf(profile.id)
-                        if (index >= 0) {
-                            configurationIdList.removeAt(index)
-                            configurationList.remove(profile.id)
-                            notifyItemRemoved(index)
-                        }
+                    val index = a.configurationIdList.indexOf(profile.id)
+                    if (index >= 0) {
+                        a.configurationIdList.removeAt(index)
+                        a.configurationList.remove(profile.id)
+                        a.notifyItemRemoved(index)
                     }
                 }
                 // 数据库真实删除
@@ -2083,19 +2055,34 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             private val updated = HashSet<ProxyEntity>()
 
-            fun filter(name: String) {
+            fun filter(name: String, global: Boolean = false) {
                 if (name.isEmpty()) {
                     reloadProfiles()
                     return
                 }
-                configurationIdList.clear()
                 val lower = name.lowercase()
-                configurationIdList.addAll(configurationList.filter {
-                    it.value.displayName().lowercase().contains(lower) ||
-                            it.value.displayType().lowercase().contains(lower) ||
-                            it.value.displayAddress().lowercase().contains(lower)
-                }.keys)
-                notifyDataSetChanged()
+                if (global) {
+                    // 全局搜索：直接从全库查询匹配节点，装填进当前可见列表展示
+                    val allProfiles = SagerDatabase.proxyDao.getAll()
+                    val matched = allProfiles.filter {
+                        it.displayName().lowercase().contains(lower) ||
+                                it.displayType().lowercase().contains(lower) ||
+                                it.displayAddress().lowercase().contains(lower)
+                    }
+                    configurationList.clear()
+                    matched.forEach { configurationList[it.id] = it }
+                    configurationIdList.clear()
+                    configurationIdList.addAll(matched.map { it.id })
+                    notifyDataSetChanged()
+                } else {
+                    configurationIdList.clear()
+                    configurationIdList.addAll(configurationList.filter {
+                        it.value.displayName().lowercase().contains(lower) ||
+                                it.value.displayType().lowercase().contains(lower) ||
+                                it.value.displayAddress().lowercase().contains(lower)
+                    }.keys)
+                    notifyDataSetChanged()
+                }
             }
 
             fun move(from: Int, to: Int) {
